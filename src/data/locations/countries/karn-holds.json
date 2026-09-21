@@ -1,0 +1,16 @@
+{
+  "id": "karn-holds",
+  "name": "test",
+  "type": "country",
+  "color": "#a9aeb9",
+  "summary": "A mountain realm of stone halls and forge-guilds, governed by a Council of Clans. Karn trades iron and cut stone with its neighbours and trusts very few of them.\n\nIts people measure a promise the way they measure a beam: by whether it will hold weight.",
+  "polygon": [
+    [1359, 219],
+    [1350, -80],
+    [1665, -166],
+    [1798, 21],
+    [1754, 140],
+    [1633, 238],
+    [1522, 263]
+  ]
+}

@@ -1,0 +1,347 @@
+/* ---- canvas ------------------------------------------------------------ */
+
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: grab;
+  background-color: var(--sea);
+  /* Fine paper grain (rendered once as a tile) plus a faint vignette. */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .25 0 0 0 0 .3 0 0 0 0 .28 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(120% 95% at 50% 45%, transparent 55%, rgba(70, 92, 88, 0.14) 100%);
+}
+
+.container[data-dragging='true'] {
+  cursor: grabbing;
+}
+
+/* Set by the dev-only trace tool while it is active. */
+.container[data-tracing='true'] .svg,
+.container[data-tracing='true'] .area,
+.container[data-tracing='true'] .marker {
+  cursor: crosshair;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.reference {
+  pointer-events: none;
+}
+
+/* ---- land ---------------------------------------------------------------- */
+
+.halos {
+  pointer-events: none;
+}
+
+.halo {
+  fill: none;
+  stroke: var(--sea-shallow);
+  stroke-width: 16px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.area {
+  fill: var(--fill);
+  stroke: rgba(75, 58, 44, 0.7);
+  stroke-width: 1.2px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke; /* borders stay hairline-thin at every zoom level */
+  cursor: pointer;
+  outline: none;
+  transition:
+    opacity 0.35s var(--ease),
+    filter 0.2s;
+}
+
+.country {
+  stroke-width: 1.5px;
+}
+
+.region {
+  stroke: rgba(75, 58, 44, 0.55);
+  stroke-width: 1px;
+  stroke-dasharray: 5 4;
+}
+
+.area:hover {
+  filter: brightness(1.07);
+}
+
+.area:focus-visible {
+  stroke: var(--accent);
+  stroke-width: 2.5px;
+  stroke-dasharray: none;
+}
+
+.dimmed {
+  opacity: 0.5;
+}
+
+.selected {
+  cursor: default;
+}
+
+/* The one loud element on the map: where you are. */
+.outline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.6px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  animation: draw-in 0.5s var(--ease);
+}
+
+.fadeIn {
+  animation: fade-in 0.45s var(--ease);
+}
+
+/* ---- labels ---------------------------------------------------------------- */
+/* --s is the camera scale (px per map unit); dividing by it keeps text a constant on-screen size. */
+
+.labels {
+  pointer-events: none;
+  font-family: var(--font-display);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.labels text {
+  fill: var(--ink);
+  paint-order: stroke fill;
+  stroke: var(--label-halo);
+  stroke-linejoin: round;
+  stroke-width: calc(4px / var(--s, 1));
+  transition: opacity 0.4s;
+}
+
+.labelCountry {
+  font-size: calc(15px / var(--s, 1));
+  font-weight: 620;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.labelFaded {
+  opacity: 0.5;
+}
+
+.labelRegion {
+  font-size: calc(14px / var(--s, 1));
+  font-style: italic;
+  font-weight: 480;
+  animation: fade-in 0.5s var(--ease);
+}
+
+/* ---- markers ----------------------------------------------------------------- */
+
+.marker {
+  cursor: pointer;
+  outline: none;
+}
+
+/* Cancels the map's zoom so everything inside is drawn in real screen pixels. */
+.markerScale {
+  transform: scale(calc(1 / var(--s, 1)));
+}
+
+.markerBody {
+  transition: transform 0.18s var(--ease);
+  animation: marker-in 0.4s var(--ease) backwards;
+}
+
+.marker:hover .markerBody,
+.marker:focus-visible .markerBody {
+  transform: scale(1.14);
+}
+
+.markerHit {
+  fill: transparent;
+}
+
+.markerBadge {
+  fill: var(--paper-raised);
+  stroke: var(--ink);
+  stroke-width: 1.3px;
+}
+
+.marker:focus-visible .markerBadge {
+  stroke: var(--accent);
+  stroke-width: 2.4px;
+}
+
+.glyph {
+  color: var(--ink);
+}
+
+.glyphCapital {
+  color: var(--accent);
+}
+
+.markerSelected .markerBadge {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.markerSelected .glyph,
+.markerSelected .glyphCapital {
+  color: var(--paper-raised);
+}
+
+.markerPulse {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6px;
+  opacity: 0.6;
+}
+
+.markerLabel {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 620;
+  fill: var(--ink);
+  dominant-baseline: central;
+  paint-order: stroke fill;
+  stroke: var(--label-halo);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+/* ---- tooltip ---------------------------------------------------------------- */
+
+.tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 12px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--paper-raised);
+  box-shadow: var(--shadow-float);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.tooltipVisible {
+  opacity: 1;
+}
+
+.tooltipTitle {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.tooltipSubtitle {
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+/* ---- controls ----------------------------------------------------------------- */
+
+.controls {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-float);
+  cursor: default;
+}
+
+.controls button {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.controls button:last-child {
+  border-bottom: 0;
+}
+
+.controls button:hover {
+  background: var(--paper-sunk);
+}
+
+.controls .controlActive {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.readout {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--paper-raised) 88%, transparent);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.readout small {
+  color: var(--ink-soft);
+  font-size: 11.5px;
+}
+
+@media (max-width: 760px) {
+  .readout {
+    display: none;
+  }
+}
+
+/* ---- motion ------------------------------------------------------------------ */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes marker-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@keyframes draw-in {
+  from {
+    opacity: 0;
+  }
+}

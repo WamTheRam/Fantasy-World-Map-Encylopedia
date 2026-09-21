@@ -1,0 +1,9 @@
+{
+  "id": "hagens-field",
+  "name": "Hagen's Field",
+  "type": "poi",
+  "parent": "northern-march",
+  "icon": "battlefield",
+  "coordinates": {"x": 545, "y": 205},
+  "summary": "The open ground where the Hagen Attack was finally broken. Farmers still turn up rusted arrowheads each spring."
+}

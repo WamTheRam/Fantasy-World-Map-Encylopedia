@@ -1,0 +1,9 @@
+{
+  "id": "sundered-tower",
+  "name": "Sundered Tower",
+  "type": "poi",
+  "parent": "deepwater-vale",
+  "icon": "ruin",
+  "coordinates": {"x": 930, "y": 130},
+  "summary": "A broken spire on a lakeshore island, said to be a relic of the Sundering. Scholars visit; locals do not."
+}

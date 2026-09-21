@@ -1,0 +1,9 @@
+{
+  "id": "aurelia",
+  "name": "Aurelia",
+  "type": "city",
+  "parent": "central-plains",
+  "icon": "capital",
+  "coordinates": {"x": 330, "y": 430},
+  "summary": "The capital of Valen and seat of House Valen. Its white-stone terraces climb a low hill above the river, and its market never quite closes."
+}

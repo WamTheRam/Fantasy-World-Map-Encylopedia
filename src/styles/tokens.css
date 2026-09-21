@@ -1,0 +1,41 @@
+/*
+  Design tokens.
+
+  Direction: a cosy café meets a modern atlas. Warm linen surfaces and espresso
+  ink for the interface; a cool tidewater sea so the land reads as the subject;
+  one wine-coloured accent reserved for "you are here" (selection, capitals).
+*/
+:root {
+  /* Surfaces */
+  --paper: #f1ebdf;
+  --paper-raised: #f8f4ea;
+  --paper-sunk: #e8dfcd;
+
+  /* Ink */
+  --ink: #2b211d;
+  --ink-soft: #6a5d52;
+  --ink-faint: #9a8d7f;
+  --line: #d9cdb6;
+
+  /* Accent: used sparingly */
+  --accent: #7d3546;
+  --accent-soft: #ead6d9;
+
+  /* Map */
+  --sea: #c9d6d1;
+  --sea-shallow: #dde7e3;
+  --label-halo: rgba(248, 244, 234, 0.88);
+
+  /* Type */
+  --font-display: 'Fraunces Variable', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-ui: 'Figtree Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Layout */
+  --panel-width: 26rem;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-pill: 999px;
+
+  --shadow-float: 0 1px 2px rgba(43, 33, 29, 0.08), 0 8px 24px rgba(43, 33, 29, 0.12);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}

@@ -1,0 +1,20 @@
+{
+  "id": "golden-delta",
+  "name": "Golden Delta",
+  "type": "region",
+  "parent": "republic-of-solmere",
+  "summary": "A rich river delta of rice terraces and orchards, sacred to Solara, goddess of the sun.",
+  "polygon": [
+    [900, 350],
+    [980, 320],
+    [1050, 360],
+    [1100, 420],
+    [1140, 500],
+    [1130, 590],
+    [1070, 670],
+    [960, 700],
+    [925, 640],
+    [905, 540],
+    [925, 440]
+  ]
+}

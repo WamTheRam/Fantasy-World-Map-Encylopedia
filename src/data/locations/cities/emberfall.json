@@ -1,0 +1,9 @@
+{
+  "id": "emberfall",
+  "name": "Emberfall",
+  "type": "city",
+  "parent": "ember-peaks",
+  "icon": "town",
+  "coordinates": {"x": 690, "y": 250},
+  "summary": "A smelting town beneath a plume of smoke that can be seen for miles. Nothing here is ever quite clean."
+}

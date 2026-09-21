@@ -1,0 +1,19 @@
+{
+  "id": "eastern-coast",
+  "name": "Eastern Coast",
+  "type": "region",
+  "parent": "kingdom-of-valen",
+  "summary": "A narrow strip of salt-bitten cliffs and fishing harbours, home to Valen's small but stubborn navy.",
+  "polygon": [
+    [560, 270],
+    [615, 230],
+    [650, 300],
+    [675, 390],
+    [660, 480],
+    [620, 560],
+    [560, 600],
+    [540, 520],
+    [555, 430],
+    [535, 350]
+  ]
+}

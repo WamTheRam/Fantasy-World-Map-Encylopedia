@@ -1,0 +1,29 @@
+{
+  "id": "kingdom-of-valen",
+  "name": "Kingdom of Valen",
+  "type": "country",
+  "color": "#a9b78a",
+  "summary": "A green, well-governed kingdom of farmland, river towns and old roads, ruled by House Valen from the capital of Aurelia. Its people are practical and hospitable, and most keep the old oaths sworn in the name of Veyr.\n\nValen's greatest strength is its roads; its greatest worry is the northern border.",
+  "polygon": [
+    [590, 160],
+    [500, 120],
+    [410, 130],
+    [300, 120],
+    [200, 150],
+    [140, 210],
+    [150, 260],
+    [140, 320],
+    [125, 400],
+    [150, 500],
+    [200, 590],
+    [280, 630],
+    [380, 650],
+    [480, 640],
+    [560, 600],
+    [620, 560],
+    [660, 480],
+    [675, 390],
+    [650, 300],
+    [615, 230]
+  ]
+}

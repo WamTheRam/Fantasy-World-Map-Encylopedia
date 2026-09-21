@@ -1,0 +1,9 @@
+{
+  "id": "temple-of-solara",
+  "name": "Temple of Solara",
+  "type": "poi",
+  "parent": "golden-delta",
+  "icon": "temple",
+  "coordinates": {"x": 1060, "y": 420},
+  "summary": "A terraced sun temple open to the sky, where the faithful gather at dawn on the solstices."
+}

@@ -1,0 +1,9 @@
+{
+  "id": "lakemere",
+  "name": "Lakemere",
+  "type": "city",
+  "parent": "deepwater-vale",
+  "icon": "city",
+  "coordinates": {"x": 960, "y": 200},
+  "summary": "The largest settlement of the Vale, built on stilts and causeways around a still, dark lake."
+}

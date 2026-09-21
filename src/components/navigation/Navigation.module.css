@@ -1,0 +1,233 @@
+.topbar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none; /* only the pills themselves catch the mouse */
+}
+
+.pill,
+.crumbs {
+  pointer-events: auto;
+  background: color-mix(in srgb, var(--paper-raised) 90%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-float);
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 18px 4px 4px;
+}
+
+.menuButton,
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.menuButton:hover,
+.iconButton:hover {
+  background: var(--paper-sunk);
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+}
+
+/* ---- breadcrumbs -------------------------------------------------------------- */
+
+.crumbs {
+  min-width: 0;
+  padding: 0 18px;
+}
+
+.crumbs ol {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  height: 46px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.crumbs li {
+  display: flex;
+  align-items: center;
+}
+
+.crumbs li + li::before {
+  content: '›';
+  margin: 0 9px;
+  color: var(--ink-faint);
+}
+
+.crumbs a {
+  font-size: 14.5px;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.crumbs a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.crumbs a[aria-current='page'] {
+  color: var(--ink);
+  font-weight: 650;
+  pointer-events: none;
+}
+
+/* ---- drawer ------------------------------------------------------------------ */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(43, 33, 29, 0.32);
+  animation: fade 0.2s;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 21;
+  width: min(22rem, 88vw);
+  padding: 20px 14px;
+  background: var(--paper);
+  border-right: 1px solid var(--line);
+  transform: translateX(-104%);
+  visibility: hidden;
+  transition:
+    transform 0.28s var(--ease),
+    visibility 0s 0.28s;
+  overflow-y: auto;
+}
+
+.drawerOpen {
+  transform: none;
+  visibility: visible;
+  box-shadow: var(--shadow-float);
+  transition: transform 0.28s var(--ease);
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 8px 18px 12px;
+}
+
+.drawerTitle {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.drawerTagline {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.menuList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+}
+
+a.menuItem:hover {
+  background: var(--paper-sunk);
+}
+
+.menuItemActive {
+  background: var(--accent-soft);
+}
+
+.menuText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.soon {
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-sunk);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.menuLabel {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 560;
+}
+
+.menuDescription {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+
+.menuItemDisabled {
+  cursor: default;
+}
+
+.menuItemDisabled .menuLabel,
+.menuItemDisabled .menuDescription {
+  opacity: 0.6;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .brand {
+    display: none;
+  }
+  .pill {
+    padding-right: 4px;
+  }
+}

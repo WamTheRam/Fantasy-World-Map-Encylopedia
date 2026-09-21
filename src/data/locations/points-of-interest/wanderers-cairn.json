@@ -1,0 +1,9 @@
+{
+  "id": "wanderers-cairn",
+  "name": "Wanderer's Cairn",
+  "type": "poi",
+  "parent": "central-plains",
+  "icon": "other",
+  "coordinates": {"x": 440, "y": 340},
+  "summary": "A tall heap of stones at a crossroads, added to by every traveller who passes. Locals say a stone carried from home brings luck on the road."
+}
