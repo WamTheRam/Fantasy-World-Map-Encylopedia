@@ -1,4 +1,4 @@
-# Aldermere Atlas
+# Atlas
 
 A map-first interactive atlas and encyclopedia for a tabletop RPG world. Open the site, see the world, click a
 country and the map glides in, click a region and it glides in again, then click a city to read about it.
@@ -275,7 +275,29 @@ Icons are data-driven. To add a new one, add its name to `LOCATION_ICONS` in `sr
    that your data is valid and that every place has a working URL.
 5. **Commit.** Your world is now just files in Git, with a history of every change.
 
-Tip: work top-down, checking the browser after each country. It's much easier to fix one polygon than twenty.
+## Tracing your own map
+
+If you've drawn a map in Paint (or anything else), you can trace it:
+
+1. Copy the image into `public/reference/`, for example `public/reference/my-map.png`.
+2. Open the image's properties and note its size in pixels, say 1600 × 1000.
+3. In `src/data/world.json`, set the map size **to the image's pixel size** and point at the image:
+
+   ```json
+   "map": {
+     "width": 1600,
+     "height": 1000,
+     "referenceImage": { "src": "reference/my-map.png", "opacity": 0.5 }
+   }
+   ```
+
+4. Reload. Your image now floats above the map at half opacity, and a small **image button** appears in the map
+   controls to show or hide it.
+5. Trace each shape: hover over its corners, **Shift-click** to copy the coordinates, and paste them into a polygon.
+   Because the map size matches the image's pixels, **the coordinates match what Paint shows** in its status bar
+   when you hover over the same spot.
+6. When you're done, delete the `referenceImage` block. The image is only a tracing guide; the interactive map is the
+   polygons.
 
 ---
 

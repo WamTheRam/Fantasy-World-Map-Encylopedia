@@ -1,0 +1,9 @@
+{
+  "id": "nyssa",
+  "name": "Nyssa",
+  "type": "deity",
+  "summary": "Lady of night, secrets and unquiet sleep. Rarely worshipped openly; often sworn by in a whisper.",
+  "relations": [
+    { "label": "Whispered of at", "target": "hollow-deep" }
+  ]
+}

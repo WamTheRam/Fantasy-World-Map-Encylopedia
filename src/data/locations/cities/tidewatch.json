@@ -4,6 +4,6 @@
   "type": "city",
   "parent": "eastern-coast",
   "icon": "village",
-  "coordinates": {"x": 595, "y": 520},
+  "coordinates": { "x": 595, "y": 520 },
   "summary": "A lighthouse village whose keepers have tended the same beacon for eleven generations."
 }

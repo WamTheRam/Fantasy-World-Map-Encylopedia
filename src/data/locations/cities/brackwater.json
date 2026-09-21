@@ -4,6 +4,9 @@
   "type": "city",
   "parent": "saltmarsh-reach",
   "icon": "village",
-  "coordinates": {"x": 850, "y": 610},
-  "summary": "A shabby fishing village on the tidal flats, popular with smugglers and unpopular with tax collectors."
+  "coordinates": { "x": 850, "y": 610 },
+  "summary": "A shabby fishing village on the tidal flats, popular with smugglers and unpopular with tax collectors.",
+  "relations": [
+    { "label": "Haunt of", "target": "brackwater-smugglers" }
+  ]
 }

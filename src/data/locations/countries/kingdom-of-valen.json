@@ -4,6 +4,14 @@
   "type": "country",
   "color": "#a9b78a",
   "summary": "A green, well-governed kingdom of farmland, river towns and old roads, ruled by House Valen from the capital of Aurelia. Its people are practical and hospitable, and most keep the old oaths sworn in the name of Veyr.\n\nValen's greatest strength is its roads; its greatest worry is the northern border.",
+  "relations": [
+    { "label": "Ruling house", "target": "house-valen" },
+    { "label": "Ruled by", "target": "queen-elara-ii" },
+    { "label": "Capital", "target": "aurelia" },
+    { "label": "Government", "target": "valen-monarchy" },
+    { "label": "Chief deity", "target": "veyr" },
+    { "label": "Border dispute", "target": "northern-border-dispute" }
+  ],
   "polygon": [
     [590, 160],
     [500, 120],

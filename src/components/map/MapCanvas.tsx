@@ -36,6 +36,8 @@ export function MapCanvas({ index, selectedId, onSelect }: MapCanvasProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [referenceVisible, setReferenceVisible] = useState(true);
   const [traceSlot, setTraceSlot] = useState<SVGGElement | null>(null);
+  /** The place whose shape is being redrawn: shown faded so only the new outline reads as live. */
+  const [ghostId, setGhostId] = useState<string | null>(null);
 
   const visibility = useMemo(() => computeVisibility(index, selectedId), [index, selectedId]);
   const selectedChain = useMemo(
@@ -90,11 +92,13 @@ export function MapCanvas({ index, selectedId, onSelect }: MapCanvasProps) {
   const points = visibility.pointIds.map((id) => index.require(id)).filter(isPoint);
 
   const countryStatus = (id: string): AreaStatus => {
+    if (id === ghostId) return 'ghost';
     if (!selectedId) return 'idle';
     if (id === focusAreaId) return 'selected';
     return id === visibility.countryId ? 'idle' : 'dimmed';
   };
   const regionStatus = (id: string): AreaStatus => {
+    if (id === ghostId) return 'ghost';
     if (id === focusAreaId) return 'selected';
     return focusAreaId && index.require(focusAreaId).type === 'region' ? 'dimmed' : 'idle';
   };
@@ -158,13 +162,13 @@ export function MapCanvas({ index, selectedId, onSelect }: MapCanvasProps) {
           />
         )}
 
-        {focusAreaId && <path d={index.svgPathOf(focusAreaId)} className={styles.outline} />}
+        {focusAreaId && focusAreaId !== ghostId && <path d={index.svgPathOf(focusAreaId)} className={styles.outline} />}
 
         <MapLabels index={index} visibility={visibility} selectedId={selectedId} selectedChain={selectedChain} />
 
         <g>
           {points.map((p) => (
-            <PointMarker key={p.id} location={p} selected={p.id === selectedId} onSelect={handleSelect} onHover={setHoveredId} />
+            <PointMarker key={p.id} location={p} selected={p.id === selectedId} ghost={p.id === ghostId} onSelect={handleSelect} onHover={setHoveredId} />
           ))}
         </g>
 
@@ -181,7 +185,7 @@ export function MapCanvas({ index, selectedId, onSelect }: MapCanvasProps) {
       {import.meta.env.DEV && <CoordinateReadout viewport={viewport} />}
       {TraceTool && (
         <Suspense fallback={null}>
-          <TraceTool index={index} selectedId={selectedId} viewport={viewport} layerSlot={traceSlot} />
+          <TraceTool index={index} selectedId={selectedId} viewport={viewport} layerSlot={traceSlot} onGhostChange={setGhostId} />
         </Suspense>
       )}
     </div>

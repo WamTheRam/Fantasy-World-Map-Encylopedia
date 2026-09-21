@@ -83,7 +83,8 @@
   color: var(--ink-faint);
 }
 
-.crumbs a {
+.crumbs a,
+.crumbs span {
   font-size: 14.5px;
   color: var(--ink-soft);
   text-decoration: none;
@@ -95,7 +96,7 @@
   text-underline-offset: 3px;
 }
 
-.crumbs a[aria-current='page'] {
+.crumbs [aria-current='page'] {
   color: var(--ink);
   font-weight: 650;
   pointer-events: none;

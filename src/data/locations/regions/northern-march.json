@@ -4,6 +4,11 @@
   "type": "region",
   "parent": "kingdom-of-valen",
   "summary": "The kingdom's cold frontier: a belt of pine forest and watchtowers facing the Karn Holds. Garrisons here are old, proud and chronically underfunded.",
+  "relations": [
+    { "label": "Garrisoned by", "target": "order-of-the-grey-watch" },
+    { "label": "Contested in", "target": "northern-border-dispute" },
+    { "label": "Invaded in", "target": "hagen-attack" }
+  ],
   "polygon": [
     [140, 210],
     [200, 150],

@@ -2,7 +2,7 @@ import { memo, type CSSProperties, type KeyboardEvent } from 'react';
 import { cx } from '@/components/common/cx';
 import styles from './Map.module.css';
 
-export type AreaStatus = 'idle' | 'selected' | 'dimmed';
+export type AreaStatus = 'idle' | 'selected' | 'dimmed' | 'ghost';
 
 interface AreaShapeProps {
   id: string;
@@ -33,6 +33,7 @@ export const AreaShape = memo(function AreaShape({ id, kind, d, fill, status, la
         kind === 'country' ? styles.country : styles.region,
         status === 'selected' && styles.selected,
         status === 'dimmed' && styles.dimmed,
+        status === 'ghost' && styles.ghost,
       )}
       style={{ '--fill': fill } as CSSProperties}
       role="button"

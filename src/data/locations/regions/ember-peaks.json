@@ -4,6 +4,10 @@
   "type": "region",
   "parent": "karn-holds",
   "summary": "Volcanic highlands where the mines run deep and the clan forges never go cold.",
+  "relations": [
+    { "label": "Nesting ground of", "target": "ember-drakes" },
+    { "label": "Governed by", "target": "council-of-clans" }
+  ],
   "polygon": [
     [590, 160],
     [650, 110],

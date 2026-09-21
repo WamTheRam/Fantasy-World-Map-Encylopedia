@@ -1,0 +1,10 @@
+{
+  "id": "solmere-assembly-government",
+  "name": "Assembly government of Solmere",
+  "type": "politics",
+  "summary": "A republic whose assembly is chosen by the guilds. Votes are lively and often for sale.",
+  "relations": [
+    { "label": "Government of", "target": "republic-of-solmere" },
+    { "label": "Exercised by", "target": "merchant-assembly" }
+  ]
+}

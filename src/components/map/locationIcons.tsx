@@ -7,6 +7,7 @@
  *   2. add an entry to ICONS below.
  */
 import type { ReactNode } from 'react';
+import { ICON_LABELS } from '@/lib/map/iconLabels';
 import type { AtlasLocation, LocationIconName } from '@/types/world';
 
 function starPath(outer: number, inner: number): string {
@@ -25,9 +26,9 @@ interface IconDefinition {
 }
 
 export const ICONS: Record<LocationIconName, IconDefinition> = {
-  capital: { label: 'Capital', glyph: <path d={starPath(7.6, 3.1)} fill="currentColor" /> },
+  capital: { label: ICON_LABELS.capital, glyph: <path d={starPath(7.6, 3.1)} fill="currentColor" /> },
   city: {
-    label: 'City',
+    label: ICON_LABELS.city,
     glyph: (
       <g fill="currentColor">
         <rect x="-6" y="-1" width="3.4" height="6.5" />
@@ -36,14 +37,14 @@ export const ICONS: Record<LocationIconName, IconDefinition> = {
       </g>
     ),
   },
-  town: { label: 'Town', glyph: <path d="M-5.2 5V0L0 -5l5.2 5v5Z" fill="currentColor" /> },
-  village: { label: 'Village', glyph: <circle r="2.8" fill="currentColor" /> },
+  town: { label: ICON_LABELS.town, glyph: <path d="M-5.2 5V0L0 -5l5.2 5v5Z" fill="currentColor" /> },
+  village: { label: ICON_LABELS.village, glyph: <circle r="2.8" fill="currentColor" /> },
   castle: {
-    label: 'Castle',
+    label: ICON_LABELS.castle,
     glyph: <path d="M-6 6V-5h3v2h2v-2h2v2h2v-2h3V6Z" fill="currentColor" />,
   },
   temple: {
-    label: 'Temple',
+    label: ICON_LABELS.temple,
     glyph: (
       <g fill="currentColor">
         <path d="M-7 -1.5 0 -6.5l7 5Z" />
@@ -55,11 +56,11 @@ export const ICONS: Record<LocationIconName, IconDefinition> = {
     ),
   },
   ruin: {
-    label: 'Ruins',
+    label: ICON_LABELS.ruin,
     glyph: <path d="M-5.5 6V-1l1.6-2.4L-2.3 -1V6ZM1.8 6V-3.6L3.6 -6.4 5.5 -3.6V6Z" fill="currentColor" />,
   },
   battlefield: {
-    label: 'Battlefield',
+    label: ICON_LABELS.battlefield,
     glyph: (
       <g stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
         <path d="M-5 -5 5 5M5 -5 -5 5" />
@@ -68,7 +69,7 @@ export const ICONS: Record<LocationIconName, IconDefinition> = {
     ),
   },
   dungeon: {
-    label: 'Dungeon',
+    label: ICON_LABELS.dungeon,
     glyph: (
       <g fill="currentColor">
         <circle cy="-2" r="3.2" />
@@ -76,7 +77,7 @@ export const ICONS: Record<LocationIconName, IconDefinition> = {
       </g>
     ),
   },
-  other: { label: 'Point of interest', glyph: <path d="M0 -6.2 6.2 0 0 6.2-6.2 0Z" fill="currentColor" /> },
+  other: { label: ICON_LABELS.other, glyph: <path d="M0 -6.2 6.2 0 0 6.2-6.2 0Z" fill="currentColor" /> },
 };
 
 /** The icon a location shows: its own `icon`, or a sensible default for its type. */

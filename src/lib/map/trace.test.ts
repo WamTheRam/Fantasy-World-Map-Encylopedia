@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildWorld } from '@/lib/content/buildWorld';
-import { formatLocationJson } from '@/lib/content/formatLocation';
+import { formatEntityJson } from '@/lib/content/formatEntity';
 import { defaultParent, nearestVertex, parentOptions, roundCoordinate, slugify } from './trace';
 
 const world = { id: 'w', name: 'W', map: { width: 500, height: 500 } };
@@ -45,37 +45,19 @@ describe('trace helpers', () => {
   });
 });
 
-describe('formatLocationJson', () => {
+describe('formatEntityJson', () => {
   it('produces JSON that parses back to the same data', () => {
     const data = { id: 'r', name: 'Region', type: 'region', parent: 'c', polygon: [[1, 2], [3, 4], [5, 6]] };
-    expect(JSON.parse(formatLocationJson(data))).toEqual(data);
+    expect(JSON.parse(formatEntityJson(data))).toEqual(data);
   });
 
   it('keeps one polygon point per line and puts polygon last', () => {
-    const text = formatLocationJson({ polygon: [[1, 2], [3, 4], [5, 6]], name: 'N', id: 'n', type: 'region' });
+    const text = formatEntityJson({ polygon: [[1, 2], [3, 4], [5, 6]], name: 'N', id: 'n', type: 'region' });
     expect(text).toContain('    [1, 2],\n    [3, 4],\n    [5, 6]\n');
     expect(text.indexOf('"polygon"')).toBeGreaterThan(text.indexOf('"type"'));
   });
 
   it('writes coordinates inline', () => {
-    expect(formatLocationJson({ id: 'x', coordinates: { x: 4, y: 9 } })).toContain('"coordinates": { "x": 4, "y": 9 }');
-  });
-});
-
-describe('mergeLocation', () => {
-  it('keeps fields the tool does not know about when re-tracing', async () => {
-    const { mergeLocation } = await import('@/lib/content/mergeLocation');
-    const existing = { id: 'r', name: 'Old', type: 'region', parent: 'c', summary: 'Hand-written lore.', color: '#abc', polygon: [[0, 0]] };
-    const incoming = { id: 'r', name: 'New', type: 'region', parent: 'c', polygon: [[1, 1], [2, 2], [3, 3]] };
-    expect(mergeLocation(existing, incoming)).toEqual({
-      id: 'r', name: 'New', type: 'region', parent: 'c', summary: 'Hand-written lore.', color: '#abc', polygon: [[1, 1], [2, 2], [3, 3]],
-    });
-  });
-
-  it('starts fresh when the type changed, or when there was no file', async () => {
-    const { mergeLocation } = await import('@/lib/content/mergeLocation');
-    const incoming = { id: 'x', name: 'X', type: 'region', polygon: [] };
-    expect(mergeLocation({ id: 'x', type: 'city', summary: 's', coordinates: { x: 1, y: 1 } }, incoming)).toEqual(incoming);
-    expect(mergeLocation(null, incoming)).toEqual(incoming);
+    expect(formatEntityJson({ id: 'x', coordinates: { x: 4, y: 9 } })).toContain('"coordinates": { "x": 4, "y": 9 }');
   });
 });

@@ -7,6 +7,8 @@ import styles from './Map.module.css';
 interface PointMarkerProps {
   location: PointLocation;
   selected: boolean;
+  /** Being redrawn: shown faded and inert. */
+  ghost?: boolean;
   onSelect: (id: string) => void;
   onHover: (id: string | null) => void;
 }
@@ -20,7 +22,7 @@ interface PointMarkerProps {
  * ordinary pixels. Hover effects live on an inner group so they never fight
  * with that zoom-cancelling transform while the camera is moving.
  */
-export const PointMarker = memo(function PointMarker({ location, selected, onSelect, onHover }: PointMarkerProps) {
+export const PointMarker = memo(function PointMarker({ location, selected, ghost = false, onSelect, onHover }: PointMarkerProps) {
   const icon = iconFor(location);
   const { x, y } = location.coordinates;
 
@@ -34,7 +36,7 @@ export const PointMarker = memo(function PointMarker({ location, selected, onSel
   return (
     <g
       transform={`translate(${x} ${y})`}
-      className={cx(styles.marker, selected && styles.markerSelected)}
+      className={cx(styles.marker, selected && styles.markerSelected, ghost && styles.markerGhost)}
       role="button"
       tabIndex={0}
       aria-label={`${location.name}, ${typeLabel(location)}`}

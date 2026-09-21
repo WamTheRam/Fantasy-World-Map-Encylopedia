@@ -1,0 +1,12 @@
+{
+  "id": "children-of-the-dawn",
+  "name": "Children of the Dawn",
+  "type": "faction",
+  "summary": "A devout movement of Solara's followers who greet every sunrise together and give freely to travellers.",
+  "relations": [
+    { "label": "Devoted to", "target": "solara" },
+    { "label": "Based at", "target": "temple-of-solara" },
+    { "label": "Led by", "target": "sister-liora" },
+    { "label": "Active in", "target": "golden-delta" }
+  ]
+}

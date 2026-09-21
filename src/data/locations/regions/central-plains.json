@@ -4,6 +4,10 @@
   "type": "region",
   "parent": "kingdom-of-valen",
   "summary": "The heart of Valen. Wheat country, market roads and the royal capital, where nearly every road in the kingdom eventually ends.",
+  "relations": [
+    { "label": "Contains the capital", "target": "aurelia" },
+    { "label": "Governed under", "target": "valen-monarchy" }
+  ],
   "polygon": [
     [150, 260],
     [200, 285],

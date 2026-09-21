@@ -4,6 +4,11 @@
   "type": "region",
   "parent": "republic-of-solmere",
   "summary": "A rich river delta of rice terraces and orchards, sacred to Solara, goddess of the sun.",
+  "relations": [
+    { "label": "Sacred to", "target": "solara" },
+    { "label": "Home of", "target": "children-of-the-dawn" },
+    { "label": "Known for", "target": "solmere-harvest-festival" }
+  ],
   "polygon": [
     [900, 350],
     [980, 320],

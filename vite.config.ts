@@ -1,7 +1,7 @@
 import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
-import { atlasDevSave } from './tools/atlasDevSave';
+import { atlasDevSave } from './tools/atlasDevSave.ts';
 
 // `VITE_BASE` lets the same code deploy to a sub-path (e.g. GitHub Pages at
 // https://user.github.io/my-atlas/). Locally it defaults to "/".

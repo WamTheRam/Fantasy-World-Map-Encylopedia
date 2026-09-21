@@ -149,6 +149,31 @@
   background: var(--accent-soft);
 }
 
+.redrawBanner {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  font-size: 13.5px;
+}
+
+.redrawBanner strong {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.redrawBanner span {
+  color: var(--ink-soft);
+}
+
+.redrawBanner p {
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
 .kinds {
   display: grid;
   grid-template-columns: 1fr 1fr;

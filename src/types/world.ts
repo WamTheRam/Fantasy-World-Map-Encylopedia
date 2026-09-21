@@ -34,14 +34,22 @@ export const LOCATION_ICONS = [
 ] as const;
 export type LocationIconName = (typeof LOCATION_ICONS)[number];
 
+/** A labelled, one-directional link from one entity to another: "Ruler of" -> kingdom-of-valen. */
+export interface Relation {
+  label: string;
+  /** The `id` of any entity: a place, person, faction, deity, event, and so on. */
+  target: string;
+}
+
 interface LocationBase {
   /** Unique, URL-safe slug: lowercase letters, digits and hyphens. Used in URLs. */
   id: string;
   name: string;
   /** `null` for countries. Otherwise the `id` of the containing location. */
   parent: string | null;
-  /** Short plain-text overview. Blank lines split paragraphs. */
+  /** Short overview, written in Markdown. Names and ids in it become links automatically. */
   summary?: string;
+  relations?: Relation[];
 }
 
 export interface AreaLocation extends LocationBase {
@@ -82,3 +90,43 @@ export interface WorldConfig {
     };
   };
 }
+
+// ---------------------------------------------------------------------------
+// Everything that isn't a place
+// ---------------------------------------------------------------------------
+
+/** Encyclopedia entries: one `type` per section of the encyclopedia. */
+export const LORE_TYPES = ['person', 'faction', 'organization', 'deity', 'politics', 'culture'] as const;
+export type LoreType = (typeof LORE_TYPES)[number];
+
+export interface LoreEntity {
+  id: string;
+  name: string;
+  type: LoreType;
+  summary?: string;
+  relations?: Relation[];
+}
+
+/**
+ * A historical event. Years are NOT unique: any number of events may share one.
+ * Each event is its own entity with its own id; the timeline groups them by year.
+ */
+export interface HistoryEvent {
+  id: string;
+  name: string;
+  type: 'event';
+  year: number;
+  /** Orders events that share a year (lower first). Optional. */
+  order?: number;
+  summary?: string;
+  relations?: Relation[];
+}
+
+/** Anything with an id that can be linked to. */
+export type Entity = AtlasLocation | LoreEntity | HistoryEvent;
+export type EntityType = LocationType | LoreType | 'event';
+
+export const isLocationEntity = (e: Entity): e is AtlasLocation =>
+  e.type === 'country' || e.type === 'region' || e.type === 'city' || e.type === 'poi';
+export const isEvent = (e: Entity): e is HistoryEvent => e.type === 'event';
+export const isLore = (e: Entity): e is LoreEntity => !isLocationEntity(e) && !isEvent(e);

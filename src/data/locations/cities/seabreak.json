@@ -4,6 +4,10 @@
   "type": "city",
   "parent": "eastern-coast",
   "icon": "city",
-  "coordinates": {"x": 620, "y": 400},
-  "summary": "Valen's principal port, where cold surf breaks against a long stone mole. Shipyards, smokehouses and the naval yards crowd the harbour."
+  "coordinates": { "x": 620, "y": 400 },
+  "summary": "Valen's principal port, where cold surf breaks against a long stone mole. Shipyards, smokehouses and the naval yards crowd the harbour.",
+  "relations": [
+    { "label": "Base of", "target": "valen-royal-navy" },
+    { "label": "Honours", "target": "maren" }
+  ]
 }

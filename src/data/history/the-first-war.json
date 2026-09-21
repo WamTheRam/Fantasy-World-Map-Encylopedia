@@ -1,0 +1,13 @@
+{
+  "id": "the-first-war",
+  "name": "The First War",
+  "type": "event",
+  "year": 243,
+  "summary": "Valen and Karn go to war over the northern pass. It ends in exhaustion, not victory.",
+  "relations": [
+    { "label": "Fought between", "target": "kingdom-of-valen" },
+    { "label": "Fought between", "target": "karn-holds" },
+    { "label": "Fought over", "target": "greywatch" },
+    { "label": "Led to", "target": "northern-border-dispute" }
+  ]
+}

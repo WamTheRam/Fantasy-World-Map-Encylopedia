@@ -1,0 +1,242 @@
+/* Vertical position of the line inside the track. The marker is centred on it. */
+.scroller {
+  --line-y: 62px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Soft edges hint that the strip scrolls. */
+  mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.track {
+  position: relative;
+  transition: min-height 0.32s var(--ease);
+}
+
+.line {
+  position: absolute;
+  top: var(--line-y);
+  left: 0;
+  right: 0;
+  height: 2px;
+  margin-top: -1px;
+  background: linear-gradient(90deg, transparent, var(--ink-faint) 90px, var(--ink-faint) calc(100% - 90px), transparent);
+  transform-origin: left;
+  animation: draw 0.9s var(--ease);
+}
+
+.gap {
+  position: absolute;
+  top: calc(var(--line-y) - 30px);
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* ---- a point on the line ---------------------------------------------------------- */
+
+.point {
+  position: absolute;
+  top: calc(var(--line-y) - 14px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 160px;
+  transform: translateX(-50%);
+  text-align: center;
+  animation: rise 0.5s var(--ease) backwards;
+}
+
+.marker {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* The visible dot is drawn separately so the clickable area can be larger than it. */
+.marker::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  grid-area: 1 / 1;
+  transition:
+    transform 0.18s var(--ease),
+    background-color 0.18s,
+    border-color 0.18s;
+}
+
+.marker:hover::before {
+  transform: scale(1.22);
+  border-color: var(--accent);
+}
+
+/* A year with several events shows how many, inside a slightly larger circle. */
+.markerGroup::before {
+  width: 26px;
+  height: 26px;
+}
+
+.count {
+  grid-area: 1 / 1;
+  z-index: 1;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pointSelected .marker::before {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.pointSelected .count {
+  color: var(--paper-raised);
+}
+
+.year {
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.pointSelected .year {
+  color: var(--accent);
+}
+
+.titleButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.titleButton:hover .title {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--ink) 35%, transparent);
+  text-underline-offset: 3px;
+}
+
+.title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 560;
+  line-height: 1.3;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.pointSelected .title {
+  font-weight: 700;
+}
+
+.more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+}
+
+.chevron {
+  display: grid;
+  transition: transform 0.25s var(--ease);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ---- the expanding list of events in one year ---------------------------------------- */
+
+.dropdown {
+  width: 250px;
+  max-height: 0;
+  margin: 0;
+  padding: 0 6px;
+  overflow: hidden;
+  list-style: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--paper-raised);
+  opacity: 0;
+  transition:
+    max-height 0.32s var(--ease),
+    opacity 0.2s,
+    margin 0.32s var(--ease),
+    padding 0.32s var(--ease),
+    border-color 0.2s;
+}
+
+.dropdownOpen {
+  max-height: calc(var(--rows) * 40px + 10px);
+  margin-top: 10px;
+  padding: 5px 6px;
+  border-color: var(--line);
+  box-shadow: var(--shadow-float);
+  opacity: 1;
+}
+
+.dropItem {
+  display: block;
+  height: 40px;
+  padding: 0 10px;
+  overflow: hidden;
+  line-height: 40px;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-size: 14.5px;
+  font-weight: 540;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dropItem:hover {
+  background: var(--paper-sunk);
+}
+
+.dropItemOn,
+.dropItemOn:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 680;
+}
+
+@keyframes draw {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+}

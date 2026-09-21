@@ -1,0 +1,11 @@
+{
+  "id": "hagens-army",
+  "name": "Hagen's Army",
+  "type": "faction",
+  "summary": "The warband raised by Hagen the Red, drawn from exiles and northern raiders. It did not survive its own victory.",
+  "relations": [
+    { "label": "Led by", "target": "hagen-the-red" },
+    { "label": "Besieged", "target": "greywatch" },
+    { "label": "Broken at", "target": "hagens-field" }
+  ]
+}

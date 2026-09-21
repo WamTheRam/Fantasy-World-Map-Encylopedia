@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { UiIcon } from '@/components/common/UiIcon';
+import { EditButton } from '@/components/editor/EditButton';
 import { useWorld } from '@/context/WorldContext';
 import type { AtlasLocation } from '@/types/world';
 import { LocationInfo } from './LocationInfo';
@@ -31,9 +32,12 @@ export function SidePanel({ location, onNavigate, onCollapse }: SidePanelProps) 
           <UiIcon name="chevronLeft" size={18} />
           {parent ? parent.name : 'World'}
         </button>
-        <button type="button" className={styles.collapse} onClick={onCollapse} aria-label="Hide panel" title="Hide panel">
-          <UiIcon name="chevronRight" size={20} />
-        </button>
+        <div className={styles.headerActions}>
+          <EditButton entityId={location.id} />
+          <button type="button" className={styles.collapse} onClick={onCollapse} aria-label="Hide panel" title="Hide panel">
+            <UiIcon name="chevronRight" size={20} />
+          </button>
+        </div>
       </header>
       <div ref={scrollRef} className={styles.scroll}>
         <LocationInfo key={location.id} location={location} onNavigate={onNavigate} />

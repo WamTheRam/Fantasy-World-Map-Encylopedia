@@ -1,0 +1,12 @@
+{
+  "id": "order-of-the-grey-watch",
+  "name": "Order of the Grey Watch",
+  "type": "organization",
+  "summary": "The military order that holds Valen's northern frontier. Its members swear their oaths on the walls of Greywatch.",
+  "relations": [
+    { "label": "Based at", "target": "greywatch" },
+    { "label": "Commanded by", "target": "warden-isolde-marsh" },
+    { "label": "Serves", "target": "kingdom-of-valen" },
+    { "label": "Guards", "target": "northern-march" }
+  ]
+}

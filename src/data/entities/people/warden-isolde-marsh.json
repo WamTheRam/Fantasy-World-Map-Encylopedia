@@ -1,0 +1,12 @@
+{
+  "id": "warden-isolde-marsh",
+  "name": "Warden Isolde Marsh",
+  "type": "person",
+  "summary": "Warden of Greywatch and commander of the northern garrison. Blunt, tireless, and deeply unimpressed by courtiers.",
+  "relations": [
+    { "label": "Commander of", "target": "greywatch" },
+    { "label": "Serves", "target": "order-of-the-grey-watch" },
+    { "label": "Worships", "target": "veyr" },
+    { "label": "Descended from defenders of", "target": "siege-of-greywatch" }
+  ]
+}

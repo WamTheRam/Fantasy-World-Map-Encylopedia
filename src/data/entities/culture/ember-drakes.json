@@ -1,0 +1,10 @@
+{
+  "id": "ember-drakes",
+  "name": "Ember drakes",
+  "type": "culture",
+  "summary": "Small, ember-scaled drakes that nest in the Ember Peaks. They are not tame, but they can be bargained with.",
+  "relations": [
+    { "label": "Found in", "target": "ember-peaks" },
+    { "label": "Feared at", "target": "hollow-deep" }
+  ]
+}

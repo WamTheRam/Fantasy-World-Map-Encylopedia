@@ -1,0 +1,12 @@
+{
+  "id": "sister-liora",
+  "name": "Sister Liora",
+  "type": "person",
+  "summary": "High priestess of Solara's temple near Sunhaven. Gentle in manner, immovable in matters of doctrine.",
+  "relations": [
+    { "label": "Serves", "target": "solara" },
+    { "label": "Leads", "target": "children-of-the-dawn" },
+    { "label": "Keeps", "target": "temple-of-solara" },
+    { "label": "Lives in", "target": "sunhaven" }
+  ]
+}

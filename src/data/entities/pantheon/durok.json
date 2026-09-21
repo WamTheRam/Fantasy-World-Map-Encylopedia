@@ -1,0 +1,12 @@
+{
+  "id": "durok",
+  "name": "Durok",
+  "type": "deity",
+  "summary": "The forge-father of the Karn clans, who is said to have hammered the mountains into shape.",
+  "relations": [
+    { "label": "Worshipped in", "target": "karn-holds" },
+    { "label": "Chief hall", "target": "kharrow" },
+    { "label": "Patron of", "target": "karn-forge-guilds" },
+    { "label": "Sworn to at", "target": "founding-of-the-council-of-clans" }
+  ]
+}

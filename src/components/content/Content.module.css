@@ -1,0 +1,136 @@
+/* ---- prose (Markdown) -------------------------------------------------------- */
+
+.prose {
+  max-width: 62ch;
+  font-size: 16.5px;
+  line-height: 1.68;
+}
+
+.prose > * {
+  margin: 0;
+}
+
+.prose > * + * {
+  margin-top: 14px;
+}
+
+.prose h2 {
+  margin-top: 30px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 580;
+  line-height: 1.2;
+}
+
+.prose h3,
+.prose h4 {
+  margin-top: 24px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 580;
+  line-height: 1.25;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.3em;
+}
+
+.prose li + li {
+  margin-top: 4px;
+}
+
+.prose blockquote {
+  margin-left: 0;
+  padding: 2px 0 2px 16px;
+  border-left: 3px solid var(--line);
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin-top: 26px;
+}
+
+.prose code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--paper-sunk);
+}
+
+.prose a[href^='http'] {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+
+.empty {
+  max-width: 52ch;
+  color: var(--ink-soft);
+  font-style: italic;
+  line-height: 1.6;
+}
+
+/* ---- links between entities: recognisable, but quiet -------------------------- */
+
+.entityLink {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  transition: text-decoration-color 0.15s;
+}
+
+.entityLink:hover {
+  text-decoration-color: currentColor;
+}
+
+/* An explicit [[link]] whose target doesn't exist: visible to the author, harmless to readers. */
+.brokenLink {
+  color: var(--ink-soft);
+  text-decoration: underline dotted var(--ink-faint);
+  text-underline-offset: 3px;
+  cursor: help;
+}
+
+/* ---- connections & backlinks ---------------------------------------------------- */
+
+.connections {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.connections dt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.connections dd {
+  margin: 1px 0 0;
+  font-size: 15.5px;
+}
+
+.backlinks {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.backlinks li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  font-size: 15.5px;
+}
+
+.backlinkMeta {
+  font-size: 13px;
+  color: var(--ink-soft);
+}

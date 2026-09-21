@@ -4,6 +4,6 @@
   "type": "city",
   "parent": "golden-delta",
   "icon": "town",
-  "coordinates": {"x": 1000, "y": 590},
+  "coordinates": { "x": 1000, "y": 590 },
   "summary": "A farming town famed for its amber barley ales and its ten-day harvest festival."
 }

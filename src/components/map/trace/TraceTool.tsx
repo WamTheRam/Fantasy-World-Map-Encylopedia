@@ -1,18 +1,26 @@
 /**
- * Dev-only trace tool: click around a shape on the map, name it, and save it as
- * a JSON file. Loaded lazily and only when `import.meta.env.DEV` is true, so it
- * is not part of the production build.
+ * Dev-only trace tool: click around a shape on the map to create a place, or to
+ * redraw one that already exists. Loaded lazily and only when `import.meta.env.DEV`
+ * is true, so it is not part of the production build.
  *
- * Two pieces render from here:
- *   - a drawing layer, portalled into the map's SVG so it shares the map's zoom
- *   - a control panel over the map
+ * There are two distinct sessions, and mixing them up was the source of an old bug:
+ *
+ *   create   a new place. Needs a name, a parent and a fresh id. Refuses any id
+ *            that is already used by anything.
+ *   redraw   replaces ONLY the shape of one specific existing place, identified
+ *            by its id. Name, summary, connections and everything else are never
+ *            sent, so they cannot change. The session ends if you navigate away.
+ *
+ * Two pieces render from here: a drawing layer portalled into the map's SVG (so
+ * it shares the map's zoom), and a control panel over the map.
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { UiIcon } from '@/components/common/UiIcon';
 import { cx } from '@/components/common/cx';
 import type { MapViewport } from '@/hooks/useMapViewport';
-import { formatLocationJson } from '@/lib/content/formatLocation';
+import { formatEntityJson } from '@/lib/content/formatEntity';
+import { entityKindLabel } from '@/lib/content/labels';
 import { ID_PATTERN } from '@/lib/content/validateWorld';
 import type { WorldIndex } from '@/lib/content/worldIndex';
 import { defaultParent, nearestVertex, parentOptions, roundCoordinate, slugify, type TraceKind } from '@/lib/map/trace';
@@ -24,9 +32,13 @@ interface TraceToolProps {
   index: WorldIndex;
   selectedId: string | null;
   viewport: MapViewport;
-  /** An <g> inside the map's SVG for the drawing layer. */
+  /** A <g> inside the map's SVG for the drawing layer. */
   layerSlot: SVGGElement | null;
+  /** Tells the map which shape is being replaced, so it can fade the old one out. */
+  onGhostChange: (id: string | null) => void;
 }
+
+type Session = { mode: 'create' } | { mode: 'redraw'; targetId: string };
 
 const KINDS: { value: TraceKind; label: string }[] = [
   { value: 'country', label: 'Country' },
@@ -34,12 +46,6 @@ const KINDS: { value: TraceKind; label: string }[] = [
   { value: 'city', label: 'City' },
   { value: 'poi', label: 'Point of interest' },
 ];
-const FOLDER: Record<TraceKind, string> = {
-  country: 'countries',
-  region: 'regions',
-  city: 'cities',
-  poi: 'points-of-interest',
-};
 const isAreaKind = (kind: TraceKind) => kind === 'country' || kind === 'region';
 
 /** Pixels within which a click snaps to an existing corner. */
@@ -65,8 +71,9 @@ const store = {
   },
 };
 
-export default function TraceTool({ index, selectedId, viewport, layerSlot }: TraceToolProps) {
+export default function TraceTool({ index, selectedId, viewport, layerSlot, onGhostChange }: TraceToolProps) {
   const [enabled, setEnabled] = useState(() => store.get('enabled') === '1');
+  const [session, setSession] = useState<Session>({ mode: 'create' });
   const [kind, setKind] = useState<TraceKind>(() => (store.get('kind') as TraceKind | null) ?? 'region');
   const [points, setPoints] = useState<Point[]>([]);
   const [name, setName] = useState('');
@@ -76,45 +83,75 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot }: Tr
   const [snap, setSnap] = useState<Point | null>(null);
   const [saving, setSaving] = useState(false);
   const [side, setSide] = useState<'left' | 'right'>(() => (store.get('side') === 'left' ? 'left' : 'right'));
-  // A note left just before the page reloaded after a save. Read here, cleared in an
-  // effect: initializers must be side-effect free (React runs them twice in dev).
+  // A note left just before the page reloaded after a save. It carries a timestamp and
+  // expires by age, so a refresh or a second reload can't lose it (or resurrect a stale one).
   const [status, setStatus] = useState<{ tone: 'ok' | 'error'; text: string } | null>(() => {
-    const flash = store.get('flash');
-    return flash ? { tone: 'ok', text: flash } : null;
+    try {
+      const flash = JSON.parse(store.get('flash') ?? 'null') as { text: string; at: number } | null;
+      if (flash && Date.now() - flash.at < 6000) return { tone: 'ok', text: flash.text };
+    } catch {
+      /* ignore malformed notes */
+    }
+    return null;
   });
 
-  useEffect(() => store.set('flash', null), []);
   useEffect(() => store.set('enabled', enabled ? '1' : '0'), [enabled]);
   useEffect(() => store.set('kind', kind), [kind]);
   useEffect(() => store.set('side', side), [side]);
 
-  const areaKind = isAreaKind(kind);
+  // ---- which session, and what it is drawing ---------------------------------
+  const redrawing = session.mode === 'redraw';
+  const target = session.mode === 'redraw' ? index.get(session.targetId) : undefined;
+  const activeKind: TraceKind = target ? target.type : kind;
+  const areaKind = isAreaKind(activeKind);
   const selected = selectedId ? index.get(selectedId) : undefined;
   const mapWidth = index.world.map.width;
 
-  // ---- derived form state --------------------------------------------------
+  const endRedraw = () => {
+    setSession({ mode: 'create' });
+    setPoints([]);
+    setStatus(null);
+  };
+
+  // A redraw belongs to one place. Leave it (or switch the tool off) and the session ends,
+  // so points drawn for one place can never be saved onto another.
+  useEffect(() => {
+    if (session.mode === 'redraw' && (!enabled || session.targetId !== selectedId)) {
+      setSession({ mode: 'create' });
+      setPoints([]);
+    }
+  }, [session, enabled, selectedId]);
+
+  useEffect(() => {
+    onGhostChange(enabled && session.mode === 'redraw' ? session.targetId : null);
+    return () => onGhostChange(null);
+  }, [enabled, session, onGhostChange]);
+
+  // ---- derived form state (create) --------------------------------------------
   const options = useMemo(() => parentOptions(index, kind), [index, kind]);
   const fallbackParent = useMemo(() => defaultParent(index, kind, selectedId), [index, kind, selectedId]);
-  const parentId = options.some((o) => o.id === parentChoice) ? parentChoice : options.some((o) => o.id === fallbackParent) ? fallbackParent : (options[0]?.id ?? null);
+  const parentId = options.some((o) => o.id === parentChoice)
+    ? parentChoice
+    : options.some((o) => o.id === fallbackParent)
+      ? fallbackParent
+      : (options[0]?.id ?? null);
   const id = idOverride ?? slugify(name);
-  const existing = id ? index.get(id) : undefined;
+  /** Ids are unique across everything (places, people, events...). */
+  const taken = !redrawing && id !== '' ? index.entity(id) : undefined;
 
-  const ready =
-    name.trim().length > 0 &&
-    ID_PATTERN.test(id) &&
-    (areaKind ? points.length >= 3 : points.length === 1) &&
-    (kind === 'country' || parentId !== null);
+  const shapeReady = areaKind ? points.length >= 3 : points.length === 1;
+  const ready = shapeReady && (redrawing || (name.trim().length > 0 && ID_PATTERN.test(id) && !taken && (kind === 'country' || parentId !== null)));
 
   const data = useMemo(() => {
     const out: Record<string, unknown> = { id, name: name.trim(), type: kind };
     if (kind !== 'country' && parentId) out.parent = parentId;
-    if (!areaKind && icon) out.icon = icon;
-    if (areaKind) out.polygon = points;
+    if (!isAreaKind(kind) && icon) out.icon = icon;
+    if (isAreaKind(kind)) out.polygon = points;
     else if (points[0]) out.coordinates = { x: points[0][0], y: points[0][1] };
     return out;
-  }, [id, name, kind, parentId, icon, areaKind, points]);
+  }, [id, name, kind, parentId, icon, points]);
 
-  /** Corners of everything currently visible: what new points can snap to. */
+  /** Corners of everything currently drawn: what new points can snap to. */
   const vertices = useMemo(() => {
     const visible = computeVisibility(index, selectedId);
     const areaIds = [...index.countries().map((c) => c.id), ...visible.regionIds];
@@ -179,7 +216,7 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot }: Tr
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
       const typing = e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
-      if (typing || points.length === 0) return;
+      if (typing || points.length === 0 || document.querySelector('dialog[open]')) return;
       if (e.key === 'Backspace' || ((e.ctrlKey || e.metaKey) && e.key === 'z')) {
         e.preventDefault();
         setPoints((prev) => prev.slice(0, -1));
@@ -193,28 +230,23 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot }: Tr
   }, [enabled, points.length]);
 
   // ---- actions -------------------------------------------------------------
-  const reset = () => {
+  const resetForm = () => {
     setPoints([]);
     setName('');
     setIdOverride(null);
     setIcon('');
   };
 
-  /** Load an existing place into the form so it can be re-traced (its file is updated in place). */
-  const redraw = () => {
+  const startRedraw = () => {
     if (!selected) return;
-    setKind(selected.type);
+    setSession({ mode: 'redraw', targetId: selected.id });
     setPoints([]);
-    setName(selected.name);
-    setIdOverride(selected.id);
-    setParentChoice(selected.parent);
-    setIcon(!isArea(selected) && selected.icon ? selected.icon : '');
     setStatus(null);
   };
 
   const changeKind = (next: TraceKind) => {
     if (next === kind) return;
-    if (!(isAreaKind(next) && areaKind)) setPoints([]); // a polygon can't become a point, or vice versa
+    if (!(isAreaKind(next) && isAreaKind(kind))) setPoints([]); // a polygon can't become a point, or vice versa
     setParentChoice(null);
     setKind(next);
   };
@@ -223,17 +255,23 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot }: Tr
     setSaving(true);
     setStatus(null);
     try {
+      // Leave the "saved" note first: the reload Vite triggers can arrive before the response does.
+      const note = redrawing && target ? `Redrew “${target.name}”` : `Saved “${name.trim() || id}”`;
+      store.set('flash', JSON.stringify({ text: note, at: Date.now() }));
+      const geometry = areaKind ? { polygon: points } : { coordinates: { x: points[0][0], y: points[0][1] } };
+      const payload = session.mode === 'redraw' ? { mode: 'update', id: session.targetId, geometry } : { mode: 'create', id, data };
       const response = await fetch(`${import.meta.env.BASE_URL}__atlas/save`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ folder: FOLDER[kind], id, data }),
+        body: JSON.stringify(payload),
       });
-      const result = (await response.json()) as { path?: string; overwritten?: boolean; error?: string };
+      const result = (await response.json()) as { path?: string; created?: boolean; error?: string };
       if (!response.ok || !result.path) throw new Error(result.error ?? 'Save failed.');
-      // Saving changes a data file, so Vite reloads the page. Leave a note to show afterwards.
-      store.set('flash', `${result.overwritten ? 'Updated' : 'Saved'} ${result.path}`);
-      reset();
+      resetForm();
+      if (redrawing) setSession({ mode: 'create' });
+      setStatus({ tone: 'ok', text: note }); // visible if the page is refreshed in place rather than reloaded
     } catch (error) {
+      store.set('flash', null);
       setStatus({ tone: 'error', text: error instanceof Error ? error.message : 'Save failed.' });
     } finally {
       setSaving(false);
@@ -241,8 +279,8 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot }: Tr
   };
 
   const copy = async () => {
-    await navigator.clipboard?.writeText(formatLocationJson(data));
-    setStatus({ tone: 'ok', text: `Copied. Save it as src/data/locations/${FOLDER[kind]}/${id}.json` });
+    await navigator.clipboard?.writeText(formatEntityJson(data));
+    setStatus({ tone: 'ok', text: `Copied. Save it as src/data/locations/…/${id}.json` });
   };
 
   // ---- drawing layer ---------------------------------------------------------
@@ -273,7 +311,21 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot }: Tr
       ? 'Click around the edge of the shape. Corners of existing shapes are snapped to (hold Alt to turn that off). Drag to pan, scroll to zoom.'
       : points.length < 3
         ? 'Keep clicking around the edge. The shape closes itself.'
-        : 'Add more points, or fill in the details below and Save. Backspace removes the last point.';
+        : 'Add more points, or finish below. Backspace removes the last point.';
+
+  const progress = (
+    <div className={styles.progress}>
+      <span>{areaKind ? `${points.length} ${points.length === 1 ? 'point' : 'points'}` : points[0] ? `x ${points[0][0]}   y ${points[0][1]}` : 'No point yet'}</span>
+      <span className={styles.progressButtons}>
+        <button type="button" onClick={() => setPoints((p) => p.slice(0, -1))} disabled={points.length === 0}>
+          Undo
+        </button>
+        <button type="button" onClick={() => setPoints([])} disabled={points.length === 0}>
+          Clear
+        </button>
+      </span>
+    </div>
+  );
 
   return (
     <>
@@ -287,104 +339,112 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot }: Tr
       {enabled && (
         <section className={cx(styles.panel, side === 'left' && styles.panelLeft)} aria-label="Trace tool">
           <header className={styles.panelHeader}>
-            <h2>Trace tool</h2>
-            <button
-              type="button"
-              onClick={() => setSide((s) => (s === 'right' ? 'left' : 'right'))}
-              title="Move this panel to the other side of the map"
-              aria-label="Move panel to the other side"
-            >
+            <h2>{redrawing ? 'Redraw shape' : 'Trace tool'}</h2>
+            <button type="button" onClick={() => setSide((s) => (s === 'right' ? 'left' : 'right'))} title="Move this panel to the other side of the map" aria-label="Move panel to the other side">
               <UiIcon name="swap" size={16} />
               Move
             </button>
           </header>
           <p className={styles.help}>{help}</p>
 
-          {selected && (
-            <button type="button" className={styles.redraw} onClick={redraw}>
-              Redraw “{selected.name}”
-            </button>
-          )}
+          {redrawing && target ? (
+            <>
+              <div className={styles.redrawBanner}>
+                <strong>“{target.name}”</strong>
+                <span>{entityKindLabel(target)} · id {target.id}</span>
+                <p>
+                  Only its {areaKind ? 'outline' : 'position'} will change. Its name, description and connections stay exactly as they are
+                  {target.type === 'country' ? '. Regions inside it are not moved.' : '.'}
+                </p>
+              </div>
+              {progress}
+              {status && <p className={cx(styles.status, status.tone === 'error' && styles.statusError)}>{status.text}</p>}
+              <div className={styles.actions}>
+                <button type="button" className={styles.primary} onClick={save} disabled={!ready || saving}>
+                  {saving ? 'Saving…' : 'Replace shape'}
+                </button>
+                <button type="button" onClick={endRedraw} disabled={saving}>
+                  Cancel
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {selected && (
+                <button type="button" className={styles.redraw} onClick={startRedraw}>
+                  Redraw “{selected.name}”
+                </button>
+              )}
 
-          <div className={styles.kinds} role="group" aria-label="What are you drawing?">
-            {KINDS.map((k) => (
-              <button key={k.value} type="button" className={cx(kind === k.value && styles.kindOn)} aria-pressed={kind === k.value} onClick={() => changeKind(k.value)}>
-                {k.label}
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.progress}>
-            <span>
-              {areaKind ? `${points.length} ${points.length === 1 ? 'point' : 'points'}` : points[0] ? `x ${points[0][0]}   y ${points[0][1]}` : 'No point yet'}
-            </span>
-            <span className={styles.progressButtons}>
-              <button type="button" onClick={() => setPoints((p) => p.slice(0, -1))} disabled={points.length === 0}>
-                Undo
-              </button>
-              <button type="button" onClick={() => setPoints([])} disabled={points.length === 0}>
-                Clear
-              </button>
-            </span>
-          </div>
-
-          <label className={styles.field}>
-            Name
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Northern March" />
-          </label>
-
-          {kind !== 'country' && (
-            <label className={styles.field}>
-              Inside
-              <select value={parentId ?? ''} onChange={(e) => setParentChoice(e.target.value)}>
-                {options.length === 0 && <option value="">(nothing to put it in yet)</option>}
-                {options.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.label}
-                  </option>
+              <div className={styles.kinds} role="group" aria-label="What are you drawing?">
+                {KINDS.map((k) => (
+                  <button key={k.value} type="button" className={cx(kind === k.value && styles.kindOn)} aria-pressed={kind === k.value} onClick={() => changeKind(k.value)}>
+                    {k.label}
+                  </button>
                 ))}
-              </select>
-            </label>
+              </div>
+
+              {progress}
+
+              <label className={styles.field}>
+                Name
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Northern March" />
+              </label>
+
+              {kind !== 'country' && (
+                <label className={styles.field}>
+                  Inside
+                  <select value={parentId ?? ''} onChange={(e) => setParentChoice(e.target.value)}>
+                    {options.length === 0 && <option value="">(nothing to put it in yet)</option>}
+                    {options.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              {!areaKind && (
+                <label className={styles.field}>
+                  Icon
+                  <select value={icon} onChange={(e) => setIcon(e.target.value as LocationIconName | '')}>
+                    <option value="">Default</option>
+                    {LOCATION_ICONS.map((i) => (
+                      <option key={i} value={i}>
+                        {i}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              <label className={styles.field}>
+                File name (id)
+                <input value={id} onChange={(e) => setIdOverride(e.target.value)} spellCheck={false} />
+              </label>
+
+              {taken && (
+                <p className={styles.note}>
+                  The id “{id}” is already used by “{taken.name}” ({entityKindLabel(taken)}). Ids are unique across the whole world, so pick another name. To reshape that place, select it and use <strong>Redraw</strong>.
+                </p>
+              )}
+              {id && !ID_PATTERN.test(id) && <p className={styles.note}>Ids use lowercase letters, digits and hyphens only.</p>}
+              {status && <p className={cx(styles.status, status.tone === 'error' && styles.statusError)}>{status.text}</p>}
+
+              <div className={styles.actions}>
+                <button type="button" className={styles.primary} onClick={save} disabled={!ready || saving}>
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+                <button type="button" onClick={copy} disabled={!ready}>
+                  Copy JSON
+                </button>
+              </div>
+              <p className={styles.fine}>
+                Creates <code>src/data/locations/…/{id || '…'}.json</code>
+              </p>
+            </>
           )}
-
-          {!areaKind && (
-            <label className={styles.field}>
-              Icon
-              <select value={icon} onChange={(e) => setIcon(e.target.value as LocationIconName | '')}>
-                <option value="">Default</option>
-                {LOCATION_ICONS.map((i) => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-
-          <label className={styles.field}>
-            File name (id)
-            <input value={id} onChange={(e) => setIdOverride(e.target.value)} spellCheck={false} />
-          </label>
-
-          {existing && (
-            <p className={styles.note}>
-              “{existing.name}” already uses this id. Saving replaces its {areaKind ? 'outline' : 'position'}; its summary and other settings are kept.
-            </p>
-          )}
-          {id && !ID_PATTERN.test(id) && <p className={styles.note}>Ids use lowercase letters, digits and hyphens only.</p>}
-          {status && <p className={cx(styles.status, status.tone === 'error' && styles.statusError)}>{status.text}</p>}
-
-          <div className={styles.actions}>
-            <button type="button" className={styles.primary} onClick={save} disabled={!ready || saving}>
-              {saving ? 'Saving…' : existing ? 'Replace' : 'Save'}
-            </button>
-            <button type="button" onClick={copy} disabled={!ready}>
-              Copy JSON
-            </button>
-          </div>
-          <p className={styles.fine}>
-            Saves to <code>src/data/locations/{FOLDER[kind]}/{id || '…'}.json</code>
-          </p>
         </section>
       )}
     </>

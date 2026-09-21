@@ -1,0 +1,13 @@
+{
+  "id": "coronation-of-elara-ii",
+  "name": "Coronation of Elara II",
+  "type": "event",
+  "year": 887,
+  "summary": "Elara II is crowned at Aurelia, beneath the eyes of the road-wardens and, it is said, of Veyr.",
+  "relations": [
+    { "label": "Crowned", "target": "queen-elara-ii" },
+    { "label": "Held at", "target": "aurelia" },
+    { "label": "Blessed by", "target": "veyr" },
+    { "label": "Continued", "target": "house-valen" }
+  ]
+}

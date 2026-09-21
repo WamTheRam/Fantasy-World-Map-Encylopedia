@@ -4,6 +4,11 @@
   "type": "city",
   "parent": "golden-delta",
   "icon": "city",
-  "coordinates": {"x": 1030, "y": 470},
-  "summary": "A pilgrimage city of gold-tiled roofs, where the year is measured by the sun's return."
+  "coordinates": { "x": 1030, "y": 470 },
+  "summary": "A pilgrimage city of gold-tiled roofs, where the year is measured by the sun's return.",
+  "relations": [
+    { "label": "Home of", "target": "sister-liora" },
+    { "label": "Nearby", "target": "temple-of-solara" },
+    { "label": "Refined in", "target": "sun-glass-magic" }
+  ]
 }

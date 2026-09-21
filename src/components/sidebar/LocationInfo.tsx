@@ -1,4 +1,5 @@
 import { CollapsibleSection } from '@/components/common/CollapsibleSection';
+import { Connections, EntityProse, LinkedFrom } from '@/components/content/EntityBody';
 import { IconChip, iconFor, typeLabel } from '@/components/map/locationIcons';
 import { useWorld } from '@/context/WorldContext';
 import { countryFill, regionFill } from '@/lib/map/theme';
@@ -26,7 +27,6 @@ export function LocationInfo({ location, onNavigate }: LocationInfoProps) {
     isPoint(location) && location.parent ? index.childrenOf(location.parent).filter((s) => s.id !== location.id) : [];
 
   const allPlaces = index.descendantsOf(location.id).filter(isPoint);
-  const paragraphs = (location.summary ?? '').split(/\n\s*\n/).filter(Boolean);
 
   const swatch =
     location.type === 'country'
@@ -70,14 +70,10 @@ export function LocationInfo({ location, onNavigate }: LocationInfoProps) {
       )}
 
       <div className={styles.prose}>
-        {paragraphs.length > 0 ? (
-          paragraphs.map((p, i) => <p key={i}>{p}</p>)
-        ) : (
-          <p className={styles.empty}>
-            Nothing has been written about {location.name} yet. Add a <code>"summary"</code> to its JSON file to fill this in.
-          </p>
-        )}
+        <EntityProse entity={location} />
       </div>
+
+      <Connections entity={location} />
 
       {regions.length > 0 && (
         <CollapsibleSection title="Regions" count={regions.length}>
@@ -100,6 +96,8 @@ export function LocationInfo({ location, onNavigate }: LocationInfoProps) {
           <LocationList items={siblings} onSelect={onNavigate} />
         </CollapsibleSection>
       )}
+
+      <LinkedFrom entity={location} />
     </article>
   );
 }

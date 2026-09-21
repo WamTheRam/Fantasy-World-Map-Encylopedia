@@ -4,6 +4,10 @@
   "type": "region",
   "parent": "karn-holds",
   "summary": "A wide, misty valley of cold lakes, reed beds and fishing villages, sheltered from the peaks to the west.",
+  "relations": [
+    { "label": "Struck by", "target": "the-sundering" },
+    { "label": "Contains", "target": "sundered-tower" }
+  ],
   "polygon": [
     [840, 70],
     [950, 80],

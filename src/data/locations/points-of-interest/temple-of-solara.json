@@ -4,6 +4,12 @@
   "type": "poi",
   "parent": "golden-delta",
   "icon": "temple",
-  "coordinates": {"x": 1060, "y": 420},
-  "summary": "A terraced sun temple open to the sky, where the faithful gather at dawn on the solstices."
+  "coordinates": { "x": 1060, "y": 420 },
+  "summary": "A terraced sun temple open to the sky, where the faithful gather at dawn on the solstices.",
+  "relations": [
+    { "label": "Dedicated to", "target": "solara" },
+    { "label": "Led by", "target": "sister-liora" },
+    { "label": "Home of", "target": "children-of-the-dawn" },
+    { "label": "Teaches", "target": "sun-glass-magic" }
+  ]
 }

@@ -1,0 +1,12 @@
+{
+  "id": "hagen-the-red",
+  "name": "Hagen the Red",
+  "type": "person",
+  "summary": "A warlord of the northern marches who gathered exiles and raiders into an army and marched them south.",
+  "relations": [
+    { "label": "Led", "target": "hagens-army" },
+    { "label": "Led", "target": "hagen-attack" },
+    { "label": "Besieged", "target": "greywatch" },
+    { "label": "Fell at", "target": "hagens-field" }
+  ]
+}

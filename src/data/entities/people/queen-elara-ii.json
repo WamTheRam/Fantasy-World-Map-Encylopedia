@@ -1,0 +1,14 @@
+{
+  "id": "queen-elara-ii",
+  "name": "Queen Elara II",
+  "type": "person",
+  "summary": "Queen of Valen and head of House Valen. She fought at the Hagen Attack as a young officer and was crowned decades later; she is known for road-building and patient diplomacy.",
+  "relations": [
+    { "label": "Ruler of", "target": "kingdom-of-valen" },
+    { "label": "Member of", "target": "house-valen" },
+    { "label": "Worships", "target": "veyr" },
+    { "label": "Participated in", "target": "hagen-attack" },
+    { "label": "Resides in", "target": "aurelia" },
+    { "label": "Crowned at", "target": "coronation-of-elara-ii" }
+  ]
+}

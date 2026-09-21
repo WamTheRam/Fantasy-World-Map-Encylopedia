@@ -20,6 +20,12 @@
   border-bottom: 1px solid var(--line);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .back,
 .collapse {
   display: inline-flex;
@@ -121,17 +127,7 @@
 }
 
 .prose {
-  display: grid;
-  gap: 14px;
   margin: 22px 0 28px;
-  max-width: 62ch;
-  font-size: 16.5px;
-  line-height: 1.68;
-}
-
-.empty {
-  color: var(--ink-soft);
-  font-style: italic;
 }
 
 /* ---- lists ------------------------------------------------------------------- */

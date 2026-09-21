@@ -88,6 +88,13 @@
   opacity: 0.5;
 }
 
+/* The shape being replaced by a redraw: still visible for reference, but inert and clearly "old". */
+.ghost {
+  opacity: 0.28;
+  stroke-dasharray: 4 4;
+  pointer-events: none;
+}
+
 .selected {
   cursor: default;
 }
@@ -164,6 +171,11 @@
 .marker:hover .markerBody,
 .marker:focus-visible .markerBody {
   transform: scale(1.14);
+}
+
+.markerGhost {
+  opacity: 0.35;
+  pointer-events: none;
 }
 
 .markerHit {

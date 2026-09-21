@@ -1,0 +1,14 @@
+{
+  "id": "the-sundering",
+  "name": "The Sundering",
+  "type": "event",
+  "year": 412,
+  "order": 1,
+  "summary": "The night sky-fire fell on the Deepwater Vale, splitting the land and breaking the old kingdoms.",
+  "relations": [
+    { "label": "Struck", "target": "deepwater-vale" },
+    { "label": "Left behind", "target": "sundered-tower" },
+    { "label": "Led to", "target": "founding-of-the-council-of-clans" },
+    { "label": "Led to", "target": "the-oath-of-veyr" }
+  ]
+}

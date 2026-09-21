@@ -4,6 +4,10 @@
   "type": "poi",
   "parent": "northern-march",
   "icon": "battlefield",
-  "coordinates": {"x": 545, "y": 205},
-  "summary": "The open ground where the Hagen Attack was finally broken. Farmers still turn up rusted arrowheads each spring."
+  "coordinates": { "x": 545, "y": 205 },
+  "summary": "The open ground where [[hagen-attack|the Hagen Attack]] was finally broken. Farmers still turn up rusted arrowheads each spring.",
+  "relations": [
+    { "label": "Site of", "target": "hagen-attack" },
+    { "label": "Fought over by", "target": "hagens-army" }
+  ]
 }

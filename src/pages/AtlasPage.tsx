@@ -7,6 +7,7 @@ import { TopBar } from '@/components/navigation/TopBar';
 import { SidePanel } from '@/components/sidebar/SidePanel';
 import { useWorld } from '@/context/WorldContext';
 import { atlasPath, resolveAtlasPath } from '@/lib/routing/atlasPaths';
+import { entityPath } from '@/lib/routing/entityPaths';
 import { NotFoundPage } from './NotFoundPage';
 import styles from './Pages.module.css';
 
@@ -32,7 +33,7 @@ export function AtlasPage() {
   useEffect(() => {
     if (!selected) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) goTo(selected.parent);
+      if (e.key === 'Escape' && !e.defaultPrevented && !document.querySelector('dialog[open]')) goTo(selected.parent);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -44,6 +45,8 @@ export function AtlasPage() {
 
   if (resolution.status === 'redirect') return <Navigate to={resolution.to} replace />;
   if (resolution.status === 'not-found') {
+    // An id that belongs to something other than a place (/atlas/veyr) is sent to its own page.
+    if (index.entity(resolution.requested)) return <Navigate to={entityPath(index, resolution.requested)} replace />;
     return (
       <NotFoundPage
         heading="That place isn't on the map"

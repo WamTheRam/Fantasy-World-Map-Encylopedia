@@ -4,6 +4,10 @@
   "type": "region",
   "parent": "republic-of-solmere",
   "summary": "A low, tidal coast of salt pans, wharves and warehouse towns, where Solmere's trade ships come and go.",
+  "relations": [
+    { "label": "Seat of", "target": "merchant-assembly" },
+    { "label": "Haunt of", "target": "brackwater-smugglers" }
+  ],
   "polygon": [
     [800, 360],
     [900, 350],

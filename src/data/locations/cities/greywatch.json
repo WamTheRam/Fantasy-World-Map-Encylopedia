@@ -4,6 +4,11 @@
   "type": "city",
   "parent": "northern-march",
   "icon": "castle",
-  "coordinates": {"x": 300, "y": 175},
-  "summary": "A weathered border fortress commanding the northern pass. It has never fallen, though it has been besieged more times than its archivists care to count."
+  "coordinates": { "x": 300, "y": 175 },
+  "summary": "A weathered border fortress commanding the northern pass. It has never fallen, though it has been besieged more times than its archivists care to count.",
+  "relations": [
+    { "label": "Garrisoned by", "target": "order-of-the-grey-watch" },
+    { "label": "Commanded by", "target": "warden-isolde-marsh" },
+    { "label": "Besieged in", "target": "siege-of-greywatch" }
+  ]
 }

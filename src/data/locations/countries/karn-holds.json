@@ -1,16 +1,30 @@
 {
   "id": "karn-holds",
-  "name": "test",
+  "name": "Karn Holds",
   "type": "country",
   "color": "#a9aeb9",
   "summary": "A mountain realm of stone halls and forge-guilds, governed by a Council of Clans. Karn trades iron and cut stone with its neighbours and trusts very few of them.\n\nIts people measure a promise the way they measure a beam: by whether it will hold weight.",
+  "relations": [
+    { "label": "Governed by", "target": "council-of-clans" },
+    { "label": "Government", "target": "karn-council-rule" },
+    { "label": "Capital", "target": "kharrow" },
+    { "label": "Chief deity", "target": "durok" },
+    { "label": "Known for", "target": "karn-forge-guilds" }
+  ],
   "polygon": [
-    [1359, 219],
-    [1350, -80],
-    [1665, -166],
-    [1798, 21],
-    [1754, 140],
-    [1633, 238],
-    [1522, 263]
+    [980, 320],
+    [1060, 270],
+    [1090, 190],
+    [1040, 110],
+    [950, 80],
+    [840, 70],
+    [730, 90],
+    [650, 110],
+    [590, 160],
+    [615, 230],
+    [650, 300],
+    [720, 330],
+    [800, 360],
+    [900, 350]
   ]
 }

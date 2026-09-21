@@ -1,0 +1,11 @@
+{
+  "id": "sun-glass-magic",
+  "name": "Sun-glass magic",
+  "type": "culture",
+  "summary": "The craft of shaping light through blown glass, taught in Solara's temples and prized by Solmere's merchants.",
+  "relations": [
+    { "label": "Taught at", "target": "temple-of-solara" },
+    { "label": "Sacred to", "target": "solara" },
+    { "label": "Refined in", "target": "sunhaven" }
+  ]
+}

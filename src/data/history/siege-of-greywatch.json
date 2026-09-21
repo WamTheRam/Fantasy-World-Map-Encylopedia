@@ -1,0 +1,14 @@
+{
+  "id": "siege-of-greywatch",
+  "name": "Siege of Greywatch",
+  "type": "event",
+  "year": 824,
+  "order": 1,
+  "summary": "Hagen's host besieges Greywatch for forty days. The wall holds; the garrison does not forget.",
+  "relations": [
+    { "label": "Took place at", "target": "greywatch" },
+    { "label": "Besieged by", "target": "hagens-army" },
+    { "label": "Defended by", "target": "order-of-the-grey-watch" },
+    { "label": "Led by", "target": "hagen-the-red" }
+  ]
+}

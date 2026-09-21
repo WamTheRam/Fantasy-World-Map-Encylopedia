@@ -1,0 +1,12 @@
+{
+  "id": "veyr",
+  "name": "Veyr",
+  "type": "deity",
+  "summary": "God of oaths, roads and safe passage. A promise made on a road is said to be witnessed by him.",
+  "relations": [
+    { "label": "Worshipped in", "target": "kingdom-of-valen" },
+    { "label": "Shrine at", "target": "wanderers-cairn" },
+    { "label": "Keeper of oaths for", "target": "house-valen" },
+    { "label": "Sanctified", "target": "the-oath-of-veyr" }
+  ]
+}

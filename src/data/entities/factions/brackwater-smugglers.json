@@ -1,0 +1,11 @@
+{
+  "id": "brackwater-smugglers",
+  "name": "Brackwater Smugglers",
+  "type": "faction",
+  "summary": "A loose network of smugglers working the tidal flats of Saltmarsh Reach. Everyone knows; nobody testifies.",
+  "relations": [
+    { "label": "Based in", "target": "brackwater" },
+    { "label": "Operates in", "target": "saltmarsh-reach" },
+    { "label": "Opposed by", "target": "merchant-assembly" }
+  ]
+}

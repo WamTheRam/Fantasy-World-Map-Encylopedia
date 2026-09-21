@@ -1,0 +1,12 @@
+{
+  "id": "the-founding",
+  "name": "The Founding",
+  "type": "event",
+  "year": 100,
+  "summary": "Valen's river towns unite beneath a single crown, and the first stones of Aurelia are laid.",
+  "relations": [
+    { "label": "Founded", "target": "kingdom-of-valen" },
+    { "label": "Took place at", "target": "aurelia" },
+    { "label": "Began", "target": "valen-monarchy" }
+  ]
+}
