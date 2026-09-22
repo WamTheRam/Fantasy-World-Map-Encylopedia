@@ -7,7 +7,7 @@
  * Every id must be unique across the whole world, whatever kind of thing it
  * names. That is what lets a bare id in prose resolve to exactly one entity.
  */
-import { pointInPolygon } from '@/lib/map/geometry';
+import { pointInAnyPolygon } from '@/lib/map/geometry';
 import {
   LOCATION_ICONS,
   LORE_TYPES,
@@ -55,13 +55,14 @@ export interface ValidationResult {
 }
 
 export const ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const LOCATION_TYPES: readonly LocationType[] = ['country', 'region', 'city', 'poi'];
+const LOCATION_TYPES: readonly LocationType[] = ['country', 'region', 'island', 'city', 'poi'];
 const ALL_TYPES: readonly string[] = [...LOCATION_TYPES, ...LORE_TYPES, 'event'];
 
-/** Which parent types each location type may have. Countries have no parent. */
+/** Which parent types each location type may have. Countries have no parent. Islands belong only to a country. */
 export const ALLOWED_PARENTS: Record<LocationType, readonly LocationType[]> = {
   country: [],
   region: ['country'],
+  island: ['country'],
   city: ['region', 'country'],
   poi: ['country', 'region', 'city'],
 };
@@ -72,7 +73,9 @@ const isOffMap = (x: number, y: number, map: { width: number; height: number }) 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const isPointTuple = (v: unknown): v is Point => Array.isArray(v) && v.length === 2 && isNumber(v[0]) && isNumber(v[1]);
+const isPolygon = (v: unknown): v is Point[] => Array.isArray(v) && v.length >= 3 && v.every(isPointTuple);
 const isCoordinates = (v: unknown): v is { x: number; y: number } => isRecord(v) && isNumber(v.x) && isNumber(v.y);
+const samePolygon = (a: Point[], b: Point[]) => a.length === b.length && a.every(([x, y], i) => x === b[i][0] && y === b[i][1]);
 
 export function validateWorld(worldRaw: unknown, files: RawFile[], markdownFiles: RawMarkdown[] = []): ValidationResult {
   const issues: ValidationIssue[] = [];
@@ -134,7 +137,7 @@ export function validateWorld(worldRaw: unknown, files: RawFile[], markdownFiles
     if (!isLocationEntity(entity)) continue;
 
     const offMap = isArea(entity)
-      ? entity.polygon.some(([x, y]) => isOffMap(x, y, map))
+      ? entity.polygons.some((polygon) => polygon.some(([x, y]) => isOffMap(x, y, map)))
       : isOffMap(entity.coordinates.x, entity.coordinates.y, map);
     if (offMap) {
       report('warning', file, `"${entity.name}" has coordinates outside the map (0,0 to ${map.width},${map.height}). Part of it won't be visible.`);
@@ -154,8 +157,19 @@ export function validateWorld(worldRaw: unknown, files: RawFile[], markdownFiles
     }
     if (!isArea(entity) && isArea(parent)) {
       const { x, y } = entity.coordinates;
-      if (!pointInPolygon([x, y], parent.polygon)) {
+      if (!pointInAnyPolygon([x, y], parent.polygons)) {
         report('warning', file, `"${entity.name}" at (${x}, ${y}) is outside the polygon of its parent "${parent.name}". It will still work, but the marker will look misplaced.`);
+      }
+    }
+
+    if (entity.type === 'island' && isArea(parent)) {
+      const missing = entity.polygons.filter((ring) => !parent.polygons.some((p) => samePolygon(p, ring)));
+      if (missing.length > 0) {
+        report(
+          'warning',
+          file,
+          `"${entity.name}" is an island of "${parent.name}", but its outline isn't part of that country's "polygons". Re-add it with the Trace tool, or copy the island's polygon into the country's file, so the country's territory includes it.`,
+        );
       }
     }
   }
@@ -249,9 +263,12 @@ function parseEntity(raw: unknown, fail: (message: string) => void): Entity | nu
     need(typeof parent === 'string', `${label} needs a "parent": the id of the ${ALLOWED_PARENTS[locationType].join(' or ')} it belongs to.`);
   }
 
-  if (locationType === 'country' || locationType === 'region') {
-    const polygon = raw.polygon;
-    need(Array.isArray(polygon) && polygon.length >= 3 && polygon.every(isPointTuple), `${label} needs a "polygon": at least 3 points, each written as [x, y].`);
+  if (locationType === 'country' || locationType === 'region' || locationType === 'island') {
+    const polygons = raw.polygons;
+    need(
+      Array.isArray(polygons) && polygons.length >= 1 && polygons.every(isPolygon),
+      `${label} needs a "polygons": a list of one or more outlines, each with at least 3 points written as [x, y].`,
+    );
     need(raw.color === undefined || typeof raw.color === 'string', `${label}: "color" must be a CSS colour string such as "#a9b78a".`);
     need(raw.labelPosition === undefined || isCoordinates(raw.labelPosition), `${label}: "labelPosition" must look like { "x": 100, "y": 200 }.`);
   } else {

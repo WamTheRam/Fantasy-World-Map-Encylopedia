@@ -9,6 +9,8 @@ export function entityKindLabel(entity: Entity): string {
       return 'Country';
     case 'region':
       return 'Region';
+    case 'island':
+      return 'Island';
     case 'city':
     case 'poi':
       return ICON_LABELS[entity.icon ?? (entity.type === 'city' ? 'city' : 'other')];

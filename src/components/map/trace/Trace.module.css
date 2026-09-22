@@ -17,6 +17,11 @@
   fill: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
+/* A previously-finished outline in a multi-piece territory (e.g. an already-added island). */
+.shapeDone {
+  opacity: 0.6;
+}
+
 /* Keeps dots a constant on-screen size at any zoom (see hooks/useMapViewport). */
 .dotScale {
   transform: scale(calc(1 / var(--s, 1)));

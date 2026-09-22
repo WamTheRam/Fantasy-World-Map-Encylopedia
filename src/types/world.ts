@@ -14,8 +14,14 @@ export interface Coordinates {
   y: number;
 }
 
-/** Areas are drawn as polygons; points are drawn as markers. */
-export type AreaType = 'country' | 'region';
+/**
+ * Areas are drawn as polygons; points are drawn as markers.
+ *
+ * An `island` is an area too: a named, independently selectable place (with its
+ * own id, summary, etc.) that also happens to be disconnected territory of a
+ * parent `country`. See `AreaLocation.polygons` below.
+ */
+export type AreaType = 'country' | 'region' | 'island';
 export type PointType = 'city' | 'poi';
 export type LocationType = AreaType | PointType;
 
@@ -54,8 +60,18 @@ interface LocationBase {
 
 export interface AreaLocation extends LocationBase {
   type: AreaType;
-  polygon: Point[];
-  /** Any CSS colour. Countries get a palette default; regions derive theirs from the country. */
+  /**
+   * One or more disconnected outlines that together make up this location's
+   * territory: usually one (a simple blob), but a mainland-plus-islands shape
+   * has several. Order doesn't matter; each ring is at least 3 `[x, y]` points.
+   *
+   * An `island` location's own `polygons` identifies the island itself. Its
+   * parent country's `polygons` also contains a copy of the same ring(s), so
+   * the country's territory (and its hover/selection highlight) includes the
+   * island automatically, without any special-casing at render time.
+   */
+  polygons: Point[][];
+  /** Any CSS colour. Countries get a palette default; regions and islands derive theirs from the country. */
   color?: string;
   /** Overrides the automatically computed label position. */
   labelPosition?: Coordinates;
@@ -69,8 +85,11 @@ export interface PointLocation extends LocationBase {
 
 export type AtlasLocation = AreaLocation | PointLocation;
 
-export const isArea = (l: AtlasLocation): l is AreaLocation => l.type === 'country' || l.type === 'region';
+export const isArea = (l: AtlasLocation): l is AreaLocation =>
+  l.type === 'country' || l.type === 'region' || l.type === 'island';
 export const isPoint = (l: AtlasLocation): l is PointLocation => l.type === 'city' || l.type === 'poi';
+/** An island is an area (it has `polygons`) that also belongs to a parent country's territory. */
+export const isIsland = (l: AtlasLocation): l is AreaLocation & { type: 'island' } => l.type === 'island';
 
 /** Contents of `src/data/world.json`. */
 export interface WorldConfig {
@@ -127,6 +146,6 @@ export type Entity = AtlasLocation | LoreEntity | HistoryEvent;
 export type EntityType = LocationType | LoreType | 'event';
 
 export const isLocationEntity = (e: Entity): e is AtlasLocation =>
-  e.type === 'country' || e.type === 'region' || e.type === 'city' || e.type === 'poi';
+  e.type === 'country' || e.type === 'region' || e.type === 'island' || e.type === 'city' || e.type === 'poi';
 export const isEvent = (e: Entity): e is HistoryEvent => e.type === 'event';
 export const isLore = (e: Entity): e is LoreEntity => !isLocationEntity(e) && !isEvent(e);

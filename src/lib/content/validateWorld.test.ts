@@ -4,8 +4,8 @@ import { buildWorld } from './buildWorld';
 const world = { id: 'w', name: 'Test World', map: { width: 100, height: 100 } };
 const square = [[0, 0], [50, 0], [50, 50], [0, 50]];
 
-const country = { id: 'c', name: 'C', type: 'country', polygon: square };
-const region = { id: 'r', name: 'R', type: 'region', parent: 'c', polygon: square };
+const country = { id: 'c', name: 'C', type: 'country', polygons: [square] };
+const region = { id: 'r', name: 'R', type: 'region', parent: 'c', polygons: [square] };
 const city = { id: 'x', name: 'X', type: 'city', parent: 'r', coordinates: { x: 10, y: 10 } };
 
 const file = (path: string, data: unknown) => ({ path, data });
@@ -47,8 +47,8 @@ describe('validateWorld', () => {
   });
 
   it('rejects malformed polygons', () => {
-    const result = buildWorld(world, [file('a.json', { ...country, polygon: [[0, 0], [1, 1]] })]);
-    expect(errors(result)[0].message).toContain('polygon');
+    const result = buildWorld(world, [file('a.json', { ...country, polygons: [[[0, 0], [1, 1]]] })]);
+    expect(errors(result)[0].message).toContain('polygons');
   });
 
   it('warns (but still loads) when a marker is outside its region', () => {
@@ -59,9 +59,38 @@ describe('validateWorld', () => {
   });
 
   it('warns when geometry falls off the map', () => {
-    const result = buildWorld(world, [file('a.json', { ...country, polygon: [[0, 0], [200, 0], [200, 50]] })]);
+    const result = buildWorld(world, [file('a.json', { ...country, polygons: [[[0, 0], [200, 0], [200, 50]]] })]);
     expect(result.index).not.toBeNull();
     expect(warnings(result)[0].message).toContain('outside the map');
+  });
+
+  it('accepts a location made of several disconnected outlines', () => {
+    const island = [[60, 60], [70, 60], [70, 70]];
+    const result = buildWorld(world, [file('a.json', { ...country, polygons: [square, island] })]);
+    expect(result.issues).toEqual([]);
+    const c = result.index?.require('c');
+    expect(c && 'polygons' in c && c.polygons).toEqual([square, island]);
+  });
+});
+
+describe('islands', () => {
+  const island = { id: 'i', name: 'I', type: 'island', parent: 'c', polygons: [[[60, 60], [70, 60], [70, 70]]] };
+
+  it('accepts an island belonging to a country', () => {
+    const result = buildWorld(world, [file('a.json', { ...country, polygons: [square, island.polygons[0]] }), file('b.json', island)]);
+    expect(result.issues).toEqual([]);
+    expect(result.index?.get('i')?.type).toBe('island');
+  });
+
+  it('rejects an island whose parent is not a country', () => {
+    const result = buildWorld(world, [file('a.json', country), file('b.json', region), file('c.json', { ...island, parent: 'r' })]);
+    expect(errors(result)[0].message).toContain("can't sit inside");
+  });
+
+  it('warns when an island outline is missing from its parent country', () => {
+    const result = buildWorld(world, [file('a.json', country), file('b.json', island)]);
+    expect(result.index).not.toBeNull();
+    expect(warnings(result)[0].message).toContain("isn't part of that country");
   });
 });
 

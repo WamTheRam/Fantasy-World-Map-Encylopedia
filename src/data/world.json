@@ -1,10 +1,11 @@
 {
-  "id": "aldermere",
-  "name": "Aldermere",
+  "id": "argoyll",
+  "name": "Argoyll",
   "tagline": "An atlas of the known lands",
   "summary": "A small, weathered continent of three nations: green Valen in the west, the mountain holds of Karn in the north-east, and the sunlit merchant Republic of Solmere in the south-east.",
   "map": {
-    "width": 1200,
-    "height": 760
+    "width": 5770,
+    "height": 2914,
+    "referenceImage": { "src": "reference/my-map.png", "opacity": 0.5 }
   }
 }

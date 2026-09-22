@@ -1,4 +1,4 @@
-import { interiorLabelPoint, pointsBounds, polygonToPath, type Bounds } from '@/lib/map/geometry';
+import { interiorLabelPointMulti, multiPolygonBounds, multiPolygonToPath, type Bounds } from '@/lib/map/geometry';
 import {
   isArea,
   type AtlasLocation,
@@ -201,9 +201,11 @@ export class WorldIndex {
       const location = this.require(id);
       if (isArea(location)) {
         cached = {
-          bounds: pointsBounds(location.polygon),
-          labelPoint: location.labelPosition ? [location.labelPosition.x, location.labelPosition.y] : interiorLabelPoint(location.polygon),
-          svgPath: polygonToPath(location.polygon),
+          bounds: multiPolygonBounds(location.polygons),
+          labelPoint: location.labelPosition
+            ? [location.labelPosition.x, location.labelPosition.y]
+            : interiorLabelPointMulti(location.polygons),
+          svgPath: multiPolygonToPath(location.polygons),
         };
       } else {
         const { x, y } = location.coordinates;

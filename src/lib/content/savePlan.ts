@@ -13,13 +13,14 @@
  *
  * Imports are relative (not "@/...") because the dev server loads this in Node.
  */
-import { LOCATION_ICONS, LORE_TYPES, type EntityType, type Relation } from '../../types/world.ts';
+import { LOCATION_ICONS, LORE_TYPES, type EntityType, type Point, type Relation } from '../../types/world.ts';
 
 export const ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const LOCATION_FOLDERS: Partial<Record<EntityType, string>> = {
   country: 'countries',
   region: 'regions',
+  island: 'islands',
   city: 'cities',
   poi: 'points-of-interest',
 };
@@ -85,7 +86,7 @@ export function planSave(args: { mode: 'create' | 'update'; id: string; kind: st
 
 export function editableFields(kind: string): readonly string[] {
   const common = ['name', 'summary', 'relations'];
-  if (kind === 'country' || kind === 'region') return [...common, 'color'];
+  if (kind === 'country' || kind === 'region' || kind === 'island') return [...common, 'color'];
   if (kind === 'city' || kind === 'poi') return [...common, 'icon'];
   if (kind === 'event') return [...common, 'year', 'order'];
   return common;
@@ -137,18 +138,51 @@ export function applyEdits(existing: Record<string, unknown> | null, kind: strin
   return out;
 }
 
+const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const isPointTuple = (v: unknown): v is Point => Array.isArray(v) && v.length === 2 && v.every(isFiniteNumber);
+const isPolygon = (v: unknown): v is Point[] => Array.isArray(v) && v.length >= 3 && v.every(isPointTuple);
+const isPolygons = (v: unknown): v is Point[][] => Array.isArray(v) && v.length >= 1 && v.every(isPolygon);
+const isAreaKind = (kind: unknown) => kind === 'country' || kind === 'region' || kind === 'island';
+
 /** Replaces only the shape of an existing place. Everything else about it is left exactly as it is. */
 export function applyGeometry(existing: Record<string, unknown>, geometry: Record<string, unknown>): Record<string, unknown> {
   const out = { ...existing };
-  if (existing.type === 'country' || existing.type === 'region') {
-    const polygon = geometry.polygon;
-    const valid = Array.isArray(polygon) && polygon.length >= 3 && polygon.every((p) => Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === 'number' && Number.isFinite(n)));
-    if (!valid) throw new Error('A polygon needs at least 3 points, each [x, y].');
-    out.polygon = polygon;
+  if (isAreaKind(existing.type)) {
+    const polygons = geometry.polygons;
+    if (!isPolygons(polygons)) throw new Error('A location needs at least one outline ("polygons"), each with at least 3 points, each [x, y].');
+    out.polygons = polygons;
   } else {
     const c = geometry.coordinates as { x?: unknown; y?: unknown } | undefined;
     if (!c || typeof c.x !== 'number' || typeof c.y !== 'number') throw new Error('A marker needs coordinates { "x": …, "y": … }.');
     out.coordinates = { x: c.x, y: c.y };
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Islands: geometry that is shared with a parent country
+// ---------------------------------------------------------------------------
+
+const samePolygon = (a: Point[], b: Point[]) => a.length === b.length && a.every(([x, y], i) => x === b[i][0] && y === b[i][1]);
+
+/**
+ * An island's own outline(s) are also part of its parent country's territory, so the
+ * country's `polygons` literally contains a copy of them (see README/TRACING.md). This
+ * keeps that copy in sync: it removes whichever of `oldPolygons` are present in the
+ * parent (by value, since ids aren't stored per-ring) and adds `newPolygons` in their
+ * place.
+ *
+ * Creating an island: pass `oldPolygons: []`, so this simply appends.
+ * Redrawing an island: pass its previous outline(s) as `oldPolygons`, so the stale copy
+ * is swapped for the new one rather than left behind as an orphaned shape.
+ * A ring that isn't found (the parent was hand-edited, or redrawn without it) is left
+ * alone; the new ring is still added, so the two are back in sync going forward.
+ */
+export function syncIslandIntoParent(parentPolygons: readonly Point[][], oldPolygons: readonly Point[][], newPolygons: readonly Point[][]): Point[][] {
+  const remaining = [...parentPolygons];
+  for (const old of oldPolygons) {
+    const index = remaining.findIndex((ring) => samePolygon(ring, old));
+    if (index !== -1) remaining.splice(index, 1);
+  }
+  return [...remaining, ...newPolygons];
 }

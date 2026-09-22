@@ -13,13 +13,15 @@ import { isPoint } from '@/types/world';
  * components) makes the behaviour easy to see and to change.
  */
 export interface MapVisibility {
-  /** Country whose regions are drawn, if any. */
+  /** Country whose regions (and islands) are drawn, if any. */
   countryId: string | null;
   regionIds: string[];
+  /** The country's islands: shown alongside its regions, each independently selectable. */
+  islandIds: string[];
   pointIds: string[];
 }
 
-const NOTHING: MapVisibility = { countryId: null, regionIds: [], pointIds: [] };
+const NOTHING: MapVisibility = { countryId: null, regionIds: [], islandIds: [], pointIds: [] };
 
 export function computeVisibility(index: WorldIndex, selectedId: string | null): MapVisibility {
   if (!selectedId) return NOTHING;
@@ -31,6 +33,9 @@ export function computeVisibility(index: WorldIndex, selectedId: string | null):
   const regionIds = country
     ? index.childrenOf(country.id).filter((l) => l.type === 'region').map((l) => l.id)
     : [];
+  const islandIds = country
+    ? index.childrenOf(country.id).filter((l) => l.type === 'island').map((l) => l.id)
+    : [];
 
   // Inside a region, show everything in it (including places nested in cities).
   // At country level, only show markers attached directly to the country.
@@ -41,5 +46,5 @@ export function computeVisibility(index: WorldIndex, selectedId: string | null):
       : [];
   points = points.filter(isPoint);
 
-  return { countryId: country?.id ?? null, regionIds, pointIds: points.map((l) => l.id) };
+  return { countryId: country?.id ?? null, regionIds, islandIds, pointIds: points.map((l) => l.id) };
 }

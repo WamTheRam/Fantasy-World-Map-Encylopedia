@@ -2,7 +2,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useMapViewport } from '@/hooks/useMapViewport';
 import type { WorldIndex } from '@/lib/content/worldIndex';
 import { computeFocusView } from '@/lib/map/focus';
-import { countryFill, regionFill } from '@/lib/map/theme';
+import { countryFill, islandFill, regionFill } from '@/lib/map/theme';
 import { computeVisibility } from '@/lib/map/visibility';
 import { isArea, isPoint } from '@/types/world';
 import { AreaShape, type AreaStatus } from './AreaShape';
@@ -89,6 +89,7 @@ export function MapCanvas({ index, selectedId, onSelect }: MapCanvasProps) {
   // ---- what to draw ------------------------------------------------------------
   const countries = index.countries().filter(isArea);
   const regions = visibility.regionIds.map((id) => index.require(id)).filter(isArea);
+  const islands = visibility.islandIds.map((id) => index.require(id)).filter(isArea);
   const points = visibility.pointIds.map((id) => index.require(id)).filter(isPoint);
 
   const countryStatus = (id: string): AreaStatus => {
@@ -97,11 +98,14 @@ export function MapCanvas({ index, selectedId, onSelect }: MapCanvasProps) {
     if (id === focusAreaId) return 'selected';
     return id === visibility.countryId ? 'idle' : 'dimmed';
   };
-  const regionStatus = (id: string): AreaStatus => {
+  /** Dims every sibling of `kind` while a different one of that same kind is focused, so only it stands out. */
+  const siblingStatus = (kind: 'region' | 'island') => (id: string): AreaStatus => {
     if (id === ghostId) return 'ghost';
     if (id === focusAreaId) return 'selected';
-    return focusAreaId && index.require(focusAreaId).type === 'region' ? 'dimmed' : 'idle';
+    return focusAreaId && index.require(focusAreaId).type === kind ? 'dimmed' : 'idle';
   };
+  const regionStatus = siblingStatus('region');
+  const islandStatus = siblingStatus('island');
 
   const reference = map.referenceImage;
 
@@ -142,6 +146,19 @@ export function MapCanvas({ index, selectedId, onSelect }: MapCanvasProps) {
               fill={regionFill(index, r)}
               status={regionStatus(r.id)}
               label={`${r.name}, ${typeLabel(r)}`}
+              onSelect={handleSelect}
+              onHover={setHoveredId}
+            />
+          ))}
+          {islands.map((i) => (
+            <AreaShape
+              key={i.id}
+              id={i.id}
+              kind="island"
+              d={index.svgPathOf(i.id)}
+              fill={islandFill(index, i)}
+              status={islandStatus(i.id)}
+              label={`${i.name}, ${typeLabel(i)}`}
               onSelect={handleSelect}
               onHover={setHoveredId}
             />

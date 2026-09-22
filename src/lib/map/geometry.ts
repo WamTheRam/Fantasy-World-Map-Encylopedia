@@ -58,6 +58,47 @@ export function polygonToPath(points: Point[]): string {
   return points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x} ${y}`).join(' ') + ' Z';
 }
 
+/** Twice the (unsigned) area, used only to compare polygons by size. */
+function polygonArea(points: Point[]): number {
+  let area2 = 0;
+  for (let i = 0; i < points.length; i++) {
+    const [x0, y0] = points[i];
+    const [x1, y1] = points[(i + 1) % points.length];
+    area2 += x0 * y1 - x1 * y0;
+  }
+  return Math.abs(area2);
+}
+
+/**
+ * The rest of this file works with a single outline. A location's territory can be
+ * several disconnected outlines (a mainland plus islands): these helpers combine them.
+ */
+
+/** Bounding box across every outline. */
+export function multiPolygonBounds(polygons: readonly Point[][]): Bounds {
+  return pointsBounds(polygons.flat());
+}
+
+/** True if the point falls inside any one of the outlines. */
+export function pointInAnyPolygon(point: Point, polygons: readonly Point[][]): boolean {
+  return polygons.some((polygon) => pointInPolygon(point, polygon));
+}
+
+/** SVG path data covering every outline (one closed sub-path per outline). */
+export function multiPolygonToPath(polygons: readonly Point[][]): string {
+  return polygons.map(polygonToPath).join(' ');
+}
+
+/** The largest outline by area: the "mainland", as opposed to a smaller island. */
+export function largestPolygon(polygons: readonly Point[][]): Point[] {
+  return polygons.reduce((best, next) => (polygonArea(next) > polygonArea(best) ? next : best));
+}
+
+/** A good label spot for a multi-outline territory: the interior point of its largest outline. */
+export function interiorLabelPointMulti(polygons: readonly Point[][]): Point {
+  return interiorLabelPoint(largestPolygon(polygons));
+}
+
 /**
  * A good spot for a label: the centroid, unless the shape is concave enough
  * that the centroid falls outside it. In that case, use the midpoint of the

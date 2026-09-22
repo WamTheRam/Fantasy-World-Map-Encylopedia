@@ -45,8 +45,9 @@ const KINDS: { value: TraceKind; label: string }[] = [
   { value: 'region', label: 'Region' },
   { value: 'city', label: 'City' },
   { value: 'poi', label: 'Point of interest' },
+  { value: 'island', label: 'Island' },
 ];
-const isAreaKind = (kind: TraceKind) => kind === 'country' || kind === 'region';
+const isAreaKind = (kind: TraceKind) => kind === 'country' || kind === 'region' || kind === 'island';
 
 /** Pixels within which a click snaps to an existing corner. */
 const SNAP_PX = 10;
@@ -75,6 +76,8 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
   const [enabled, setEnabled] = useState(() => store.get('enabled') === '1');
   const [session, setSession] = useState<Session>({ mode: 'create' });
   const [kind, setKind] = useState<TraceKind>(() => (store.get('kind') as TraceKind | null) ?? 'region');
+  /** Outlines already finished with "Add Island" this session; the shape currently being clicked out lives in `points`. */
+  const [rings, setRings] = useState<Point[][]>([]);
   const [points, setPoints] = useState<Point[]>([]);
   const [name, setName] = useState('');
   const [idOverride, setIdOverride] = useState<string | null>(null);
@@ -109,6 +112,7 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
 
   const endRedraw = () => {
     setSession({ mode: 'create' });
+    setRings([]);
     setPoints([]);
     setStatus(null);
   };
@@ -118,6 +122,7 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
   useEffect(() => {
     if (session.mode === 'redraw' && (!enabled || session.targetId !== selectedId)) {
       setSession({ mode: 'create' });
+      setRings([]);
       setPoints([]);
     }
   }, [session, enabled, selectedId]);
@@ -139,27 +144,31 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
   /** Ids are unique across everything (places, people, events...). */
   const taken = !redrawing && id !== '' ? index.entity(id) : undefined;
 
-  const shapeReady = areaKind ? points.length >= 3 : points.length === 1;
+  /** Every outline for this location: outlines finished with "Add Island", plus the one in progress if it's a closed shape. */
+  const polygons = useMemo(() => (points.length >= 3 ? [...rings, points] : rings), [rings, points]);
+
+  const shapeReady = areaKind ? polygons.length > 0 : points.length === 1;
   const ready = shapeReady && (redrawing || (name.trim().length > 0 && ID_PATTERN.test(id) && !taken && (kind === 'country' || parentId !== null)));
 
   const data = useMemo(() => {
     const out: Record<string, unknown> = { id, name: name.trim(), type: kind };
     if (kind !== 'country' && parentId) out.parent = parentId;
     if (!isAreaKind(kind) && icon) out.icon = icon;
-    if (isAreaKind(kind)) out.polygon = points;
+    if (isAreaKind(kind)) out.polygons = polygons;
     else if (points[0]) out.coordinates = { x: points[0][0], y: points[0][1] };
     return out;
-  }, [id, name, kind, parentId, icon, points]);
+  }, [id, name, kind, parentId, icon, polygons, points]);
 
   /** Corners of everything currently drawn: what new points can snap to. */
   const vertices = useMemo(() => {
     const visible = computeVisibility(index, selectedId);
-    const areaIds = [...index.countries().map((c) => c.id), ...visible.regionIds];
-    return areaIds.flatMap((areaId) => {
+    const areaIds = [...index.countries().map((c) => c.id), ...visible.regionIds, ...visible.islandIds];
+    const existing = areaIds.flatMap((areaId) => {
       const location = index.require(areaId);
-      return isArea(location) ? location.polygon : [];
+      return isArea(location) ? location.polygons.flat() : [];
     });
-  }, [index, selectedId]);
+    return [...existing, ...rings.flat()];
+  }, [index, selectedId, rings]);
 
   // ---- map interaction -----------------------------------------------------
   useEffect(() => {
@@ -211,26 +220,9 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
     };
   }, [enabled, areaKind, vertices, viewport, mapWidth]);
 
-  // Backspace / Ctrl+Z remove the last point; Esc clears the shape (instead of stepping up a level).
-  useEffect(() => {
-    if (!enabled) return;
-    const onKey = (e: KeyboardEvent) => {
-      const typing = e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
-      if (typing || points.length === 0 || document.querySelector('dialog[open]')) return;
-      if (e.key === 'Backspace' || ((e.ctrlKey || e.metaKey) && e.key === 'z')) {
-        e.preventDefault();
-        setPoints((prev) => prev.slice(0, -1));
-      } else if (e.key === 'Escape') {
-        e.preventDefault(); // tells the page not to also navigate up
-        setPoints([]);
-      }
-    };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [enabled, points.length]);
-
   // ---- actions -------------------------------------------------------------
   const resetForm = () => {
+    setRings([]);
     setPoints([]);
     setName('');
     setIdOverride(null);
@@ -240,6 +232,7 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
   const startRedraw = () => {
     if (!selected) return;
     setSession({ mode: 'redraw', targetId: selected.id });
+    setRings([]);
     setPoints([]);
     setStatus(null);
   };
@@ -247,9 +240,46 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
   const changeKind = (next: TraceKind) => {
     if (next === kind) return;
     if (!(isAreaKind(next) && isAreaKind(kind))) setPoints([]); // a polygon can't become a point, or vice versa
+    setRings([]); // starting a different kind of place starts a fresh territory too
     setParentChoice(null);
     setKind(next);
   };
+
+  /** Removes the last click, or (if the current outline is empty) un-finishes the last island. */
+  const undo = () => {
+    if (points.length > 0) {
+      setPoints((prev) => prev.slice(0, -1));
+    } else if (rings.length > 0) {
+      setPoints(rings[rings.length - 1]);
+      setRings((prev) => prev.slice(0, -1));
+    }
+  };
+
+  /** Finishes the current outline as its own disconnected piece of territory, and starts a new one. */
+  const addIsland = () => {
+    if (points.length < 3) return;
+    setRings((prev) => [...prev, points]);
+    setPoints([]);
+  };
+
+  // Backspace / Ctrl+Z remove the last point (or, if the current outline is empty, un-finish
+  // the last island back into it); Esc clears the current outline (instead of stepping up a level).
+  useEffect(() => {
+    if (!enabled) return;
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+      if (typing || (points.length === 0 && rings.length === 0) || document.querySelector('dialog[open]')) return;
+      if (e.key === 'Backspace' || ((e.ctrlKey || e.metaKey) && e.key === 'z')) {
+        e.preventDefault();
+        undo();
+      } else if (e.key === 'Escape') {
+        e.preventDefault(); // tells the page not to also navigate up
+        setPoints([]);
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [enabled, points, rings]);
 
   const save = async () => {
     setSaving(true);
@@ -258,7 +288,7 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
       // Leave the "saved" note first: the reload Vite triggers can arrive before the response does.
       const note = redrawing && target ? `Redrew “${target.name}”` : `Saved “${name.trim() || id}”`;
       store.set('flash', JSON.stringify({ text: note, at: Date.now() }));
-      const geometry = areaKind ? { polygon: points } : { coordinates: { x: points[0][0], y: points[0][1] } };
+      const geometry = areaKind ? { polygons } : { coordinates: { x: points[0][0], y: points[0][1] } };
       const payload = session.mode === 'redraw' ? { mode: 'update', id: session.targetId, geometry } : { mode: 'create', id, data };
       const response = await fetch(`${import.meta.env.BASE_URL}__atlas/save`, {
         method: 'POST',
@@ -285,8 +315,21 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
 
   // ---- drawing layer ---------------------------------------------------------
   const path = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x} ${y}`).join(' ') + (points.length >= 3 ? ' Z' : '');
+  const ringPaths = rings.map((ring) => ring.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x} ${y}`).join(' ') + ' Z');
   const layer: ReactNode = (
     <g className={styles.layer} aria-hidden="true">
+      {ringPaths.map((d, i) => (
+        <path key={`ring-${i}`} d={d} className={cx(styles.shape, styles.shapeClosed, styles.shapeDone)} />
+      ))}
+      {rings.map((ring, ri) =>
+        ring.map(([x, y], i) => (
+          <g key={`ring-${ri}-${i}`} transform={`translate(${x} ${y})`}>
+            <g className={styles.dotScale}>
+              <circle className={styles.dot} r={4.5} />
+            </g>
+          </g>
+        )),
+      )}
       {areaKind && points.length >= 2 && <path d={path} className={cx(styles.shape, points.length >= 3 && styles.shapeClosed)} />}
       {points.map(([x, y], i) => (
         <g key={i} transform={`translate(${x} ${y})`}>
@@ -308,20 +351,33 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
   const help = !areaKind
     ? 'Click where it goes on the map. Click again to move it.'
     : points.length === 0
-      ? 'Click around the edge of the shape. Corners of existing shapes are snapped to (hold Alt to turn that off). Drag to pan, scroll to zoom.'
+      ? rings.length > 0
+        ? 'Click around the edge of the next disconnected piece (an island, or any other separate outline).'
+        : 'Click around the edge of the shape. Corners of existing shapes are snapped to (hold Alt to turn that off). Drag to pan, scroll to zoom.'
       : points.length < 3
         ? 'Keep clicking around the edge. The shape closes itself.'
-        : 'Add more points, or finish below. Backspace removes the last point.';
+        : 'Add more points, use "Add Island" to start a separate, disconnected piece, or finish below. Backspace removes the last point.';
 
   const progress = (
     <div className={styles.progress}>
       <span>{areaKind ? `${points.length} ${points.length === 1 ? 'point' : 'points'}` : points[0] ? `x ${points[0][0]}   y ${points[0][1]}` : 'No point yet'}</span>
       <span className={styles.progressButtons}>
-        <button type="button" onClick={() => setPoints((p) => p.slice(0, -1))} disabled={points.length === 0}>
+        <button type="button" onClick={undo} disabled={points.length === 0 && rings.length === 0}>
           Undo
         </button>
         <button type="button" onClick={() => setPoints([])} disabled={points.length === 0}>
           Clear
+        </button>
+      </span>
+    </div>
+  );
+
+  const islandProgress = areaKind && (
+    <div className={styles.progress}>
+      <span>{rings.length === 0 ? 'One outline so far' : `${rings.length} ${rings.length === 1 ? 'piece' : 'pieces'} added`}</span>
+      <span className={styles.progressButtons}>
+        <button type="button" onClick={addIsland} disabled={points.length < 3} title="Finish this outline and start tracing a separate, disconnected one (e.g. an island)">
+          Add Island
         </button>
       </span>
     </div>
@@ -353,15 +409,18 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
                 <strong>“{target.name}”</strong>
                 <span>{entityKindLabel(target)} · id {target.id}</span>
                 <p>
-                  Only its {areaKind ? 'outline' : 'position'} will change. Its name, description and connections stay exactly as they are
-                  {target.type === 'country' ? '. Regions inside it are not moved.' : '.'}
+                  Only its {areaKind ? 'outline(s)' : 'position'} will change. Its name, description and connections stay exactly as they are
+                  {target.type === 'country'
+                    ? '. Regions inside it are not moved, but if it has islands, re-add them here with "Add Island" or their territory will go stale.'
+                    : '.'}
                 </p>
               </div>
               {progress}
+              {islandProgress}
               {status && <p className={cx(styles.status, status.tone === 'error' && styles.statusError)}>{status.text}</p>}
               <div className={styles.actions}>
                 <button type="button" className={styles.primary} onClick={save} disabled={!ready || saving}>
-                  {saving ? 'Saving…' : 'Replace shape'}
+                  {saving ? 'Saving…' : rings.length > 0 ? 'Finish Territory' : 'Replace shape'}
                 </button>
                 <button type="button" onClick={endRedraw} disabled={saving}>
                   Cancel
@@ -385,6 +444,7 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
               </div>
 
               {progress}
+              {islandProgress}
 
               <label className={styles.field}>
                 Name
@@ -434,7 +494,7 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
 
               <div className={styles.actions}>
                 <button type="button" className={styles.primary} onClick={save} disabled={!ready || saving}>
-                  {saving ? 'Saving…' : 'Save'}
+                  {saving ? 'Saving…' : rings.length > 0 ? 'Finish Territory' : 'Save'}
                 </button>
                 <button type="button" onClick={copy} disabled={!ready}>
                   Copy JSON

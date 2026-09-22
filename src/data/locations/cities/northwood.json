@@ -1,9 +1,0 @@
-{
-  "id": "northwood",
-  "name": "Northwood",
-  "type": "city",
-  "parent": "northern-march",
-  "icon": "town",
-  "coordinates": { "x": 440, "y": 195 },
-  "summary": "A timber town at the edge of the great pine forest, supplying most of the kingdom's shipwrights and charcoal burners."
-}

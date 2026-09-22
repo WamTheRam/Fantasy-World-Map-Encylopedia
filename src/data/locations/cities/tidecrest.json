@@ -1,9 +1,0 @@
-{
-  "id": "tidecrest",
-  "name": "Tidecrest",
-  "type": "city",
-  "parent": "saltmarsh-reach",
-  "icon": "town",
-  "coordinates": { "x": 800, "y": 440 },
-  "summary": "A salt-trading town behind a long sea wall, its rooftops white with dried brine."
-}

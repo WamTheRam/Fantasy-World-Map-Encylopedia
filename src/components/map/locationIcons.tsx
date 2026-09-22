@@ -88,13 +88,15 @@ export function iconFor(location: AtlasLocation): LocationIconName {
   return 'other';
 }
 
-/** Human-readable type shown in tooltips and headings: "Country", "Region", or the icon's label. */
+/** Human-readable type shown in tooltips and headings: "Country", "Region", "Island", or the icon's label. */
 export function typeLabel(location: AtlasLocation): string {
   switch (location.type) {
     case 'country':
       return 'Country';
     case 'region':
       return 'Region';
+    case 'island':
+      return 'Island';
     default:
       return ICONS[iconFor(location)].label;
   }

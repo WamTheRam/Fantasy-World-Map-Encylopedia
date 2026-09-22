@@ -1,9 +1,0 @@
-{
-  "id": "reedmoor",
-  "name": "Reedmoor",
-  "type": "city",
-  "parent": "deepwater-vale",
-  "icon": "village",
-  "coordinates": { "x": 990, "y": 255 },
-  "summary": "A village of reed-cutters and eel-smokers on the marshy southern edge of the Vale."
-}

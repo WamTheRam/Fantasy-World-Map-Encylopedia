@@ -1,9 +1,0 @@
-{
-  "id": "stonegate",
-  "name": "Stonegate",
-  "type": "city",
-  "parent": "ember-peaks",
-  "icon": "castle",
-  "coordinates": { "x": 800, "y": 150 },
-  "summary": "A fortress-gate sealing the pass into Valen. Its toll-keepers are famously incorruptible, and famously expensive."
-}

@@ -1,9 +1,0 @@
-{
-  "id": "larkspur",
-  "name": "Larkspur",
-  "type": "city",
-  "parent": "central-plains",
-  "icon": "village",
-  "coordinates": { "x": 380, "y": 560 },
-  "summary": "A quiet village of beekeepers and orchard-tenders, famous for its honey and little else."
-}

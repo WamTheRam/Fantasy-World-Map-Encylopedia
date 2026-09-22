@@ -1,9 +1,0 @@
-{
-  "id": "millhaven",
-  "name": "Millhaven",
-  "type": "city",
-  "parent": "central-plains",
-  "icon": "town",
-  "coordinates": { "x": 240, "y": 350 },
-  "summary": "A river town of granaries and watermills, known for hard cheese and harder bargaining."
-}

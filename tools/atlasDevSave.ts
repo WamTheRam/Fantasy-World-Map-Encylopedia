@@ -22,13 +22,15 @@ import {
   defaultContentFile,
   isPlaceKind,
   planSave,
+  syncIslandIntoParent,
   validateEdits,
   type ExistingEntry,
 } from '../src/lib/content/savePlan.ts';
+import type { Point } from '../src/types/world.ts';
 
 const DATA_DIRS = ['locations', 'entities', 'history'];
 /** The only keys accepted when creating a place, so a request can't smuggle in others. */
-const NEW_PLACE_KEYS = ['id', 'name', 'type', 'parent', 'color', 'icon', 'coordinates', 'labelPosition', 'summary', 'relations', 'polygon'];
+const NEW_PLACE_KEYS = ['id', 'name', 'type', 'parent', 'color', 'icon', 'coordinates', 'labelPosition', 'summary', 'relations', 'polygons'];
 
 async function walk(dir: string, extension: string): Promise<string[]> {
   let entries;
@@ -117,15 +119,36 @@ export function atlasDevSave(): Plugin {
             data?: Record<string, unknown>;
             geometry?: Record<string, unknown>;
           };
-          const existing = (await scanDefinitions(src)).get(id) ?? [];
+          const definitions = await scanDefinitions(src);
+          const existing = definitions.get(id) ?? [];
 
           if (mode === 'create') {
             const kind = String(data?.type);
             if (!data || !isPlaceKind(kind) || data.id !== id) return reply(res, 400, { error: 'Only places are created here, and the body must match the id.' });
             const plan = planSave({ mode, id, kind, existing });
             if (!plan.ok) return reply(res, plan.status, { error: plan.error });
+
+            // An island's outline is also part of its parent country's territory (see
+            // TRACING.md), so find that parent's file *before* writing anything, and fail
+            // cleanly if it's missing, rather than creating an island with nowhere to merge into.
+            let parent: { file: string; data: Record<string, unknown> } | null = null;
+            if (kind === 'island') {
+              const parentId = typeof data.parent === 'string' ? data.parent : '';
+              const parentEntries = definitions.get(parentId) ?? [];
+              if (parentEntries.length !== 1 || parentEntries[0].type !== 'country') {
+                return reply(res, 400, { error: `An island needs a parent country. "${parentId}" isn't exactly one country.` });
+              }
+              parent = { file: parentEntries[0].file, data: await readJson(parentEntries[0].file) };
+            }
+
             const clean = Object.fromEntries(Object.entries(data).filter(([key]) => NEW_PLACE_KEYS.includes(key)));
             await writeJson(plan.file, clean);
+
+            if (parent) {
+              const parentPolygons = Array.isArray(parent.data.polygons) ? (parent.data.polygons as Point[][]) : [];
+              const islandPolygons = Array.isArray(clean.polygons) ? (clean.polygons as Point[][]) : [];
+              await writeJson(parent.file, { ...parent.data, polygons: syncIslandIntoParent(parentPolygons, [], islandPolygons) });
+            }
             return reply(res, 200, { path: `src/${plan.file}`, created: true });
           }
 
@@ -134,7 +157,25 @@ export function atlasDevSave(): Plugin {
           const plan = planSave({ mode, id, kind: isPlaceKind(kind) ? kind : 'region', existing });
           if (!plan.ok) return reply(res, plan.status, { error: plan.error });
           if (!isPlaceKind(kind)) return reply(res, 400, { error: `"${id}" is not a place, so it has no shape.` });
-          await writeJson(plan.file, applyGeometry(await readJson(plan.file), geometry));
+
+          const before = await readJson(plan.file);
+          await writeJson(plan.file, applyGeometry(before, geometry));
+
+          // Redrawing an island: keep its parent country's territory in sync by swapping
+          // the island's old outline(s) there for the new one(s). Best-effort: if the
+          // parent can no longer be found (a hand-edited file), the shape still updates;
+          // the world's validator will flag the resulting mismatch.
+          if (kind === 'island' && typeof before.parent === 'string') {
+            const parentEntries = definitions.get(before.parent) ?? [];
+            if (parentEntries.length === 1 && parentEntries[0].type === 'country') {
+              const parentData = await readJson(parentEntries[0].file);
+              const parentPolygons = Array.isArray(parentData.polygons) ? (parentData.polygons as Point[][]) : [];
+              const oldPolygons = Array.isArray(before.polygons) ? (before.polygons as Point[][]) : [];
+              const newPolygons = Array.isArray(geometry.polygons) ? (geometry.polygons as Point[][]) : [];
+              await writeJson(parentEntries[0].file, { ...parentData, polygons: syncIslandIntoParent(parentPolygons, oldPolygons, newPolygons) });
+            }
+          }
+
           return reply(res, 200, { path: `src/${plan.file}`, created: false });
         } catch (error) {
           reply(res, 400, { error: error instanceof Error ? error.message : 'Bad request.' });

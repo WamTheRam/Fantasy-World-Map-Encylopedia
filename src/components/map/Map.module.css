@@ -74,6 +74,13 @@
   stroke-dasharray: 5 4;
 }
 
+/* An island: part of its country's territory (see AreaShape), shown alongside regions when the country is selected. */
+.island {
+  stroke: rgba(75, 58, 44, 0.55);
+  stroke-width: 1px;
+  stroke-dasharray: 2 3;
+}
+
 .area:hover {
   filter: brightness(1.07);
 }

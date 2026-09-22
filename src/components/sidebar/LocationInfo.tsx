@@ -2,7 +2,7 @@ import { CollapsibleSection } from '@/components/common/CollapsibleSection';
 import { Connections, EntityProse, LinkedFrom } from '@/components/content/EntityBody';
 import { IconChip, iconFor, typeLabel } from '@/components/map/locationIcons';
 import { useWorld } from '@/context/WorldContext';
-import { countryFill, regionFill } from '@/lib/map/theme';
+import { countryFill, islandFill, regionFill } from '@/lib/map/theme';
 import { isPoint, type AtlasLocation } from '@/types/world';
 import { LocationList } from './LocationList';
 import styles from './Sidebar.module.css';
@@ -22,6 +22,7 @@ export function LocationInfo({ location, onNavigate }: LocationInfoProps) {
   const ancestors = [...index.ancestorsOf(location.id)].reverse();
   const children = index.childrenOf(location.id);
   const regions = children.filter((c) => c.type === 'region');
+  const islands = children.filter((c) => c.type === 'island');
   const places = children.filter(isPoint);
   const siblings =
     isPoint(location) && location.parent ? index.childrenOf(location.parent).filter((s) => s.id !== location.id) : [];
@@ -33,7 +34,9 @@ export function LocationInfo({ location, onNavigate }: LocationInfoProps) {
       ? countryFill(index, location)
       : location.type === 'region'
         ? regionFill(index, location)
-        : null;
+        : location.type === 'island'
+          ? islandFill(index, location)
+          : null;
 
   return (
     <article className={styles.article}>
@@ -62,9 +65,10 @@ export function LocationInfo({ location, onNavigate }: LocationInfoProps) {
         </p>
       )}
 
-      {(regions.length > 0 || allPlaces.length > 0) && !isPoint(location) && (
+      {(regions.length > 0 || islands.length > 0 || allPlaces.length > 0) && !isPoint(location) && (
         <p className={styles.facts}>
           {regions.length > 0 && <span>{plural(regions.length, 'region', 'regions')}</span>}
+          {islands.length > 0 && <span>{plural(islands.length, 'island', 'islands')}</span>}
           {allPlaces.length > 0 && <span>{plural(allPlaces.length, 'place', 'places')}</span>}
         </p>
       )}
@@ -78,6 +82,12 @@ export function LocationInfo({ location, onNavigate }: LocationInfoProps) {
       {regions.length > 0 && (
         <CollapsibleSection title="Regions" count={regions.length}>
           <LocationList items={regions} onSelect={onNavigate} />
+        </CollapsibleSection>
+      )}
+
+      {islands.length > 0 && (
+        <CollapsibleSection title="Islands" count={islands.length}>
+          <LocationList items={islands} onSelect={onNavigate} />
         </CollapsibleSection>
       )}
 

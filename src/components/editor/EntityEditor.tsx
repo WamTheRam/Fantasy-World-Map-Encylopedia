@@ -111,7 +111,7 @@ export default function EntityEditor(props: EditorProps) {
         fields.order = order.trim() === '' ? null : Number(order);
       }
       if (kind === 'city' || kind === 'poi') fields.icon = icon || null;
-      if (kind === 'country' || kind === 'region') fields.color = color.trim() || null;
+      if (kind === 'country' || kind === 'region' || kind === 'island') fields.color = color.trim() || null;
 
       leaveFlash(`Saved “${name.trim()}”`, props.mode === 'create' ? routeFor(kind, id) : undefined);
       const response = await fetch(`${import.meta.env.BASE_URL}__atlas/entity`, {
@@ -203,7 +203,7 @@ export default function EntityEditor(props: EditorProps) {
           </label>
         )}
 
-        {(kind === 'country' || kind === 'region') && (
+        {(kind === 'country' || kind === 'region' || kind === 'island') && (
           <label className={styles.field}>
             Map colour
             <span className={styles.colorRow}>

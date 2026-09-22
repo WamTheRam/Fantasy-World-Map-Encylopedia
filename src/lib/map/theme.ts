@@ -12,6 +12,13 @@ const REGION_TINTS = [
   { mix: '#3f5a4b', amount: 12 },
 ];
 
+/** Islands get their own, slightly bluer tint set so they read as distinct from mainland regions. */
+const ISLAND_TINTS = [
+  { mix: '#2f5a6b', amount: 16 },
+  { mix: '#ffffff', amount: 26 },
+  { mix: '#2f5a6b', amount: 8 },
+];
+
 export function countryFill(index: WorldIndex, country: AtlasLocation): string {
   if (country.type === 'country' && country.color) return country.color;
   const position = Math.max(0, index.countries().findIndex((c) => c.id === country.id));
@@ -25,5 +32,15 @@ export function regionFill(index: WorldIndex, region: AtlasLocation): string {
   const siblings = country ? index.childrenOf(country.id).filter((l) => l.type === 'region') : [];
   const position = Math.max(0, siblings.findIndex((l) => l.id === region.id));
   const tint = REGION_TINTS[position % REGION_TINTS.length];
+  return `color-mix(in srgb, ${base}, ${tint.mix} ${tint.amount}%)`;
+}
+
+export function islandFill(index: WorldIndex, island: AtlasLocation): string {
+  if (island.type === 'island' && island.color) return island.color;
+  const country = island.parent ? index.require(island.parent) : null;
+  const base = country ? countryFill(index, country) : COUNTRY_PALETTE[0];
+  const siblings = country ? index.childrenOf(country.id).filter((l) => l.type === 'island') : [];
+  const position = Math.max(0, siblings.findIndex((l) => l.id === island.id));
+  const tint = ISLAND_TINTS[position % ISLAND_TINTS.length];
   return `color-mix(in srgb, ${base}, ${tint.mix} ${tint.amount}%)`;
 }

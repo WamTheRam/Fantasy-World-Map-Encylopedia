@@ -40,6 +40,16 @@ export const MapLabels = memo(function MapLabels({ index, visibility, selectedId
           </text>
         );
       })}
+
+      {visibility.islandIds.map((id) => {
+        if (selectedChain.has(id)) return null;
+        const [x, y] = index.labelPointOf(id);
+        return (
+          <text key={id} x={x} y={y} className={styles.labelRegion}>
+            {index.require(id).name}
+          </text>
+        );
+      })}
     </g>
   );
 });

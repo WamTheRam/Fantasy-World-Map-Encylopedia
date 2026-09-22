@@ -1,0 +1,8 @@
+{
+  "id": "lowridge",
+  "name": "Lowridge",
+  "type": "city",
+  "parent": "aurelion",
+  "icon": "town",
+  "coordinates": { "x": 3287, "y": 1146 }
+}

@@ -6,8 +6,8 @@ import { defaultParent, nearestVertex, parentOptions, roundCoordinate, slugify }
 const world = { id: 'w', name: 'W', map: { width: 500, height: 500 } };
 const square = [[0, 0], [100, 0], [100, 100], [0, 100]];
 const { index } = buildWorld(world, [
-  { path: 'a.json', data: { id: 'c', name: 'Country', type: 'country', polygon: square } },
-  { path: 'b.json', data: { id: 'r', name: 'Region', type: 'region', parent: 'c', polygon: square } },
+  { path: 'a.json', data: { id: 'c', name: 'Country', type: 'country', polygons: [square] } },
+  { path: 'b.json', data: { id: 'r', name: 'Region', type: 'region', parent: 'c', polygons: [square] } },
   { path: 'c.json', data: { id: 'x', name: 'City', type: 'city', parent: 'r', coordinates: { x: 5, y: 5 } } },
 ]);
 
@@ -47,14 +47,20 @@ describe('trace helpers', () => {
 
 describe('formatEntityJson', () => {
   it('produces JSON that parses back to the same data', () => {
-    const data = { id: 'r', name: 'Region', type: 'region', parent: 'c', polygon: [[1, 2], [3, 4], [5, 6]] };
+    const data = { id: 'r', name: 'Region', type: 'region', parent: 'c', polygons: [[[1, 2], [3, 4], [5, 6]]] };
     expect(JSON.parse(formatEntityJson(data))).toEqual(data);
   });
 
-  it('keeps one polygon point per line and puts polygon last', () => {
-    const text = formatEntityJson({ polygon: [[1, 2], [3, 4], [5, 6]], name: 'N', id: 'n', type: 'region' });
-    expect(text).toContain('    [1, 2],\n    [3, 4],\n    [5, 6]\n');
-    expect(text.indexOf('"polygon"')).toBeGreaterThan(text.indexOf('"type"'));
+  it('keeps one polygon point per line, grouped by outline, with polygons last', () => {
+    const text = formatEntityJson({ polygons: [[[1, 2], [3, 4], [5, 6]]], name: 'N', id: 'n', type: 'region' });
+    expect(text).toContain('      [1, 2],\n      [3, 4],\n      [5, 6]\n');
+    expect(text.indexOf('"polygons"')).toBeGreaterThan(text.indexOf('"type"'));
+  });
+
+  it('writes each disconnected outline as its own bracketed group', () => {
+    const data = { id: 'c', name: 'C', type: 'country', polygons: [[[0, 0], [1, 0], [1, 1]], [[9, 9], [10, 9], [10, 10]]] };
+    expect(JSON.parse(formatEntityJson(data))).toEqual(data);
+    expect(formatEntityJson(data)).toContain('    ],\n    [\n');
   });
 
   it('writes coordinates inline', () => {
