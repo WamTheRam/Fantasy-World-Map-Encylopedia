@@ -72,6 +72,40 @@
   line-height: 1.6;
 }
 
+/* ---- entity image -------------------------------------------------------------- */
+
+.imageWrap {
+  margin-bottom: 20px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--paper-sunk);
+}
+
+.image {
+  display: block;
+  width: 100%;
+  max-height: 380px;
+  object-fit: cover;
+}
+
+/* ---- overview: a short intro, set apart from the article beneath it ----------- */
+
+.overview {
+  margin-bottom: 22px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent);
+  background: var(--paper-sunk);
+}
+
+.overview .prose {
+  max-width: none;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.5;
+}
+
 /* ---- links between entities: recognisable, but quiet -------------------------- */
 
 .entityLink {

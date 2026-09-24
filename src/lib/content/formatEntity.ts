@@ -14,7 +14,7 @@
  *
  * Deliberately has no imports: the dev server (Node) loads it too.
  */
-const KEY_ORDER = ['id', 'name', 'type', 'parent', 'year', 'order', 'color', 'icon', 'coordinates', 'labelPosition', 'summary', 'relations'];
+const KEY_ORDER = ['id', 'name', 'type', 'parent', 'year', 'order', 'color', 'icon', 'image', 'coordinates', 'labelPosition', 'summary', 'relations'];
 
 const isXY = (v: unknown): v is { x: number; y: number } =>
   typeof v === 'object' &&

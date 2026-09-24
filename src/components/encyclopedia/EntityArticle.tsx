@@ -1,5 +1,6 @@
 import { EditButton } from '@/components/editor/EditButton';
 import { Connections, EntityProse, LinkedFrom } from '@/components/content/EntityBody';
+import { EntityImage } from '@/components/content/EntityImage';
 import { EntityLink } from '@/components/content/EntityLink';
 import { useWorld } from '@/context/WorldContext';
 import { entityKindLabel } from '@/lib/content/labels';
@@ -36,6 +37,7 @@ export function EntityArticle({ entity }: { entity: Entity }) {
         </p>
       )}
 
+      <EntityImage entity={entity} />
       <div className={styles.prose}>
         <EntityProse entity={entity} />
       </div>

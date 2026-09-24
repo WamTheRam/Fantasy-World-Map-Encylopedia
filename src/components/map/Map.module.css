@@ -137,18 +137,31 @@
   stroke: var(--label-halo);
   stroke-linejoin: round;
   stroke-width: calc(4px / var(--s, 1));
-  transition: opacity 0.4s;
+  /* Two independent reasons a label can be dimmed: how "revealed" it is at this
+     zoom level (--reveal-mult, set by .labelCountry below) and whether something
+     else on the map is selected right now (--fade-mult, set by .labelFaded).
+     Read through var()'s fallback rather than declared here, so a lower-specificity
+     rule setting the custom property still wins over this element-type selector. */
+  opacity: calc(var(--reveal-mult, 1) * var(--fade-mult, 1));
+  transition: opacity 0.3s;
 }
 
 .labelCountry {
-  font-size: calc(15px / var(--s, 1));
+  /* --label-size is set per-country (its territory's size on the map), continuously
+     rather than in a few fixed steps; dividing by --s keeps it a constant on-screen
+     size as the camera zooms. */
+  font-size: calc(var(--label-size, 15px) / var(--s, 1));
   font-weight: 620;
   letter-spacing: 0.2em;
   text-transform: uppercase;
+  /* A small country's name only earns its place on screen once the map has zoomed
+     in enough (--reveal-at / --reveal-span, also set per-country): fully hidden
+     below that scale, fully shown above it, fading continuously in between. */
+  --reveal-mult: clamp(0, calc((var(--s, 1) - var(--reveal-at, 0)) / var(--reveal-span, 1)), 1);
 }
 
 .labelFaded {
-  opacity: 0.5;
+  --fade-mult: 0.5;
 }
 
 .labelRegion {

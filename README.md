@@ -131,6 +131,7 @@ Lists in the side panel are sorted alphabetically by name. If something is wrong
 | `summary` | no | Plain text for the panel. `\n\n` separates paragraphs |
 | `color` | no | Any CSS colour. If omitted, a colour from the built-in earthy palette is chosen |
 | `labelPosition` | no | `{ "x": 200, "y": 180 }`. Override where the name is drawn (see [Troubleshooting](#troubleshooting)) |
+| `image` | no | Path to an image under `public/`, e.g. `"images/my-country.jpg"`. Set it from the Edit dialog (Image field) rather than by hand; shown at the top of the panel |
 
 ## Adding a region
 
@@ -185,6 +186,7 @@ country's colour so neighbours stay distinguishable.
 | `coordinates` | yes | `{ "x": …, "y": … }` |
 | `icon` | no | One of the [icons below](#location-icons). Defaults to `city` for cities and `other` for points of interest |
 | `summary` | no | Plain text for the panel |
+| `image` | no | Path to an image under `public/`. Set it from the Edit dialog rather than by hand; shown at the top of the panel |
 
 Markers appear when their region is selected (or when you select the marker itself).
 
@@ -408,6 +410,7 @@ src/
 ├── pages/                 route-level screens
 └── styles/                design tokens and global CSS
 
+public/images/<id>.<ext>   entity images, uploaded from the Edit dialog (not embedded in the JSON)
 tools/atlasDevSave.ts      dev-only: lets the Trace tool save files (never part of a build)
 docs/                      TRACING.md (making your map), ARCHITECTURE.md
 ```

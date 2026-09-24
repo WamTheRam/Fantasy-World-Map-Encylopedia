@@ -185,6 +185,71 @@
   flex: 1;
 }
 
+/* ---- image field ------------------------------------------------------------------- */
+
+.fileButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 620;
+  cursor: pointer;
+}
+
+.fileButton:hover {
+  background: var(--paper-sunk);
+}
+
+.fileButtonEmpty {
+  color: var(--ink-soft);
+}
+
+.imagePreview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.imagePreview img {
+  width: 96px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  object-fit: cover;
+}
+
+.imagePreviewActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.imagePreviewActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  font-weight: 620;
+  cursor: pointer;
+}
+
+.imagePreviewActions button:hover {
+  background: var(--paper-sunk);
+  color: var(--ink);
+}
+
 /* ---- markdown editor ------------------------------------------------------------------ */
 
 .bodyHeader {

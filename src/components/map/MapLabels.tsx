@@ -1,5 +1,6 @@
-import { memo } from 'react';
+import { memo, useMemo, type CSSProperties } from 'react';
 import type { WorldIndex } from '@/lib/content/worldIndex';
+import { computeCountryLabelStyles } from '@/lib/map/labelStyle';
 import type { MapVisibility } from '@/lib/map/visibility';
 import { cx } from '@/components/common/cx';
 import styles from './Map.module.css';
@@ -17,14 +18,37 @@ interface MapLabelsProps {
  * they never get in the way of clicking the shapes underneath.
  */
 export const MapLabels = memo(function MapLabels({ index, visibility, selectedId, selectedChain }: MapLabelsProps) {
+  const countries = index.countries();
+
+  // Bigger countries get bigger, always-visible names; small ones fade in as the
+  // map zooms in, so the world view doesn't turn into a pile of overlapping text.
+  const labelStyles = useMemo(
+    () => computeCountryLabelStyles(new Map(countries.map((c) => [c.id, index.areaOf(c.id)]))),
+    [index],
+  );
+
   return (
     <g className={styles.labels} aria-hidden="true">
-      {index.countries().map((country) => {
+      {countries.map((country) => {
         // Once a country is the context, its regions carry the names instead.
         if (country.id === visibility.countryId) return null;
         const [x, y] = index.labelPointOf(country.id);
+        const style = labelStyles.get(country.id);
+        const vars = style
+          ? ({
+              '--label-size': `${style.fontSize}px`,
+              '--reveal-at': style.revealAt,
+              '--reveal-span': Math.max(style.fullAt - style.revealAt, 0.0001),
+            } as CSSProperties)
+          : undefined;
         return (
-          <text key={country.id} x={x} y={y} className={cx(styles.labelCountry, selectedId && styles.labelFaded)}>
+          <text
+            key={country.id}
+            x={x}
+            y={y}
+            style={vars}
+            className={cx(styles.labelCountry, selectedId && styles.labelFaded)}
+          >
             {country.name}
           </text>
         );

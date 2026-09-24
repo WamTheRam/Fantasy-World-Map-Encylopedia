@@ -20,10 +20,13 @@ const SKIP = new Set(['link', 'linkReference', 'inlineCode', 'code', 'heading', 
  *
  * Headings, code and existing links are left alone. `linked` is shared across
  * the whole document, so an entity is auto-linked at its first mention only.
+ * Pass an external `linked` Set in `options` to share that "first mention"
+ * state across more than one document (e.g. an Overview block plus the article
+ * below it); otherwise each call gets its own, scoped to just its own text.
  */
-export function remarkEntityLinks(options: { resolver: LinkResolver; selfId?: string }) {
+export function remarkEntityLinks(options: { resolver: LinkResolver; selfId?: string; linked?: Set<string> }) {
   return (tree: MdNode) => {
-    const linked = new Set<string>();
+    const linked = options.linked ?? new Set<string>();
 
     const visit = (node: MdNode) => {
       if (!node.children || SKIP.has(node.type)) return;

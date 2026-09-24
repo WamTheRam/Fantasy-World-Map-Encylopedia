@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { CollapsibleSection } from '@/components/common/CollapsibleSection';
 import { useWorld } from '@/context/WorldContext';
 import { entityKindLabel } from '@/lib/content/labels';
@@ -7,22 +8,36 @@ import { RichText } from './RichText';
 import styles from './Content.module.css';
 
 /**
- * The summary and long-form content of an entity, as one document. Rendering
- * them together means each mentioned entity is linked once, at first mention,
- * across both.
+ * The summary and long-form content of an entity: a short "Overview" (the
+ * summary), styled distinctly as an introduction, above the main article (the
+ * Markdown body). They share one `linked` set so an entity mentioned in the
+ * Overview isn't linked again on first mention in the article below it.
  */
 export function EntityProse({ entity }: { entity: Entity }) {
   const index = useWorld();
-  const markdown = [entity.summary, index.markdownOf(entity.id)].filter((part): part is string => !!part?.trim()).join('\n\n');
+  const summary = entity.summary?.trim() || null;
+  const body = index.markdownOf(entity.id)?.trim() || null;
+  // A fresh "first mention" set per entity, shared between the Overview and article below.
+  const linked = useMemo(() => new Set<string>(), [entity.id]);
 
-  if (!markdown) {
+  if (!summary && !body) {
     return (
       <p className={styles.empty}>
         Nothing has been written about {entity.name} yet. Use <strong>Edit</strong> (or add a <code>"summary"</code> to its JSON file) to fill this in.
       </p>
     );
   }
-  return <RichText markdown={markdown} selfId={entity.id} />;
+
+  return (
+    <>
+      {summary && (
+        <div className={styles.overview}>
+          <RichText markdown={summary} selfId={entity.id} linked={linked} />
+        </div>
+      )}
+      {body && <RichText markdown={body} selfId={entity.id} linked={linked} />}
+    </>
+  );
 }
 
 /** Labelled links out of this entity: "Ruler of: Kingdom of Valen". */

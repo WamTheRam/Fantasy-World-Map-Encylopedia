@@ -4,11 +4,13 @@ import {
   interiorLabelPoint,
   interiorLabelPointMulti,
   largestPolygon,
+  multiPolygonArea,
   multiPolygonBounds,
   multiPolygonToPath,
   pointInAnyPolygon,
   pointInPolygon,
   pointsBounds,
+  polygonArea,
   polygonCentroid,
   polygonToPath,
 } from './geometry';
@@ -40,6 +42,10 @@ describe('geometry', () => {
   it('builds a closed SVG path', () => {
     expect(polygonToPath(square)).toBe('M0 0 L10 0 L10 10 L0 10 Z');
   });
+
+  it('computes polygon area', () => {
+    expect(polygonArea(square)).toBe(100);
+  });
 });
 
 describe('multi-outline territory (mainland plus islands)', () => {
@@ -68,5 +74,9 @@ describe('multi-outline territory (mainland plus islands)', () => {
 
   it('anchors the label on the largest outline', () => {
     expect(interiorLabelPointMulti(polygons)).toEqual(interiorLabelPoint(mainland));
+  });
+
+  it('sums area across every outline', () => {
+    expect(multiPolygonArea(polygons)).toBe(polygonArea(mainland) + polygonArea(island));
   });
 });

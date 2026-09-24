@@ -24,6 +24,18 @@ const groupOf = (entity: Entity) => (isLocationEntity(entity) ? 'Places' : isEve
 /** Where a new entry lives, so we can open it after saving. */
 const routeFor = (kind: EntityType, id: string) => (kind === 'event' ? `/history/${id}` : `/${categoryOfType(kind as LoreType).id}/${id}`);
 
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error ?? new Error('Could not read the file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function EntityEditor(props: EditorProps) {
   const index = useWorld();
   const existing = props.mode === 'update' ? index.requireEntity(props.entityId) : null;
@@ -38,6 +50,10 @@ export default function EntityEditor(props: EditorProps) {
   const [order, setOrder] = useState(existing && isEvent(existing) && existing.order !== undefined ? String(existing.order) : '');
   const [icon, setIcon] = useState<LocationIconName | ''>(existing && isLocationEntity(existing) && isPoint(existing) ? (existing.icon ?? '') : '');
   const [color, setColor] = useState(existing && isLocationEntity(existing) && isArea(existing) ? (existing.color ?? '') : '');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [tab, setTab] = useState<'write' | 'preview'>('write');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -45,11 +61,97 @@ export default function EntityEditor(props: EditorProps) {
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  // Snapshot of the fields' starting values, to detect unsaved changes without
+  // touching every individual onChange handler.
+  const initialRef = useRef({
+    name: existing?.name ?? '',
+    summary: existing?.summary ?? '',
+    body: existing ? (index.markdownOf(existing.id) ?? '') : '',
+    relations: existing?.relations ?? [],
+    year: existing && isEvent(existing) ? String(existing.year) : '',
+    order: existing && isEvent(existing) && existing.order !== undefined ? String(existing.order) : '',
+    icon: existing && isLocationEntity(existing) && isPoint(existing) ? (existing.icon ?? '') : '',
+    color: existing && isLocationEntity(existing) && isArea(existing) ? (existing.color ?? '') : '',
+  });
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog && !dialog.open) dialog.showModal();
   }, []);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setObjectUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setObjectUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+
+  const dirty = useMemo(() => {
+    if (imageFile || imageRemoved) return true;
+    const init = initialRef.current;
+    return (
+      name !== init.name ||
+      summary !== init.summary ||
+      body !== init.body ||
+      year !== init.year ||
+      order !== init.order ||
+      icon !== init.icon ||
+      color !== init.color ||
+      relations.length !== init.relations.length ||
+      relations.some((r, i) => r.label !== init.relations[i]?.label || r.target !== init.relations[i]?.target)
+    );
+  }, [name, summary, body, year, order, icon, color, relations, imageFile, imageRemoved]);
+
+  // Escape fires the dialog's native "cancel" event before it closes: intercept it the
+  // same way as the Cancel/close/backdrop handlers, so unsaved changes are protected however the dialog is closed.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const onCancel = (e: Event) => {
+      if (saving) {
+        e.preventDefault();
+        return;
+      }
+      if (dirty && !saved) {
+        e.preventDefault();
+        if (window.confirm('Discard unsaved changes?')) dialog.close();
+      }
+    };
+    dialog.addEventListener('cancel', onCancel);
+    return () => dialog.removeEventListener('cancel', onCancel);
+  }, [dirty, saved, saving]);
+
+  const attemptClose = () => {
+    if (saving) return;
+    if (dirty && !saved && !window.confirm('Discard unsaved changes?')) return;
+    dialogRef.current?.close();
+  };
+
+  const previewUrl = objectUrl ?? (!imageRemoved && existing?.image ? `${import.meta.env.BASE_URL}${existing.image}` : null);
+
+  const onPickImage = (file: File | null) => {
+    if (!file) return;
+    if (!IMAGE_TYPES.includes(file.type)) {
+      setImageError('Use a PNG, JPEG, WebP or GIF image.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setImageError('Images must be 6 MB or smaller.');
+      return;
+    }
+    setImageError(null);
+    setImageFile(file);
+    setImageRemoved(false);
+  };
+
+  const onRemoveImage = () => {
+    setImageFile(null);
+    setImageRemoved(true);
+    setImageError(null);
+  };
 
   const id = existing ? existing.id : (idOverride ?? slugify(name));
   const idTaken = props.mode === 'create' && id !== '' && index.entity(id) !== undefined;
@@ -101,10 +203,24 @@ export default function EntityEditor(props: EditorProps) {
     setSaving(true);
     setError(null);
     try {
+      let finalImage: string | null = imageRemoved ? null : (existing?.image ?? null);
+      if (imageFile) {
+        const dataUrl = await fileToDataUrl(imageFile);
+        const imgResponse = await fetch(`${import.meta.env.BASE_URL}__atlas/image`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id, dataUrl }),
+        });
+        const imgResult = (await imgResponse.json()) as { path?: string; error?: string };
+        if (!imgResponse.ok) throw new Error(imgResult.error ?? 'Image upload failed.');
+        finalImage = imgResult.path ?? null;
+      }
+
       const fields: Record<string, unknown> = {
         name: name.trim(),
         summary,
         relations: relations.filter((r) => r.label.trim() && r.target),
+        image: finalImage,
       };
       if (kind === 'event') {
         fields.year = Number(year);
@@ -141,7 +257,7 @@ export default function EntityEditor(props: EditorProps) {
       className={styles.dialog}
       onClose={props.onClose}
       onClick={(e) => {
-        if (e.target === dialogRef.current) dialogRef.current?.close(); // a click on the backdrop
+        if (e.target === dialogRef.current) attemptClose(); // a click on the backdrop
       }}
     >
       <header className={styles.header}>
@@ -149,7 +265,7 @@ export default function EntityEditor(props: EditorProps) {
           <p className={styles.kicker}>{existing ? `Editing · ${heading}` : heading}</p>
           <h2 className={styles.heading}>{name.trim() || 'Untitled'}</h2>
         </div>
-        <button type="button" className={styles.close} onClick={() => dialogRef.current?.close()} aria-label="Close">
+        <button type="button" className={styles.close} onClick={attemptClose} aria-label="Close">
           <UiIcon name="close" />
         </button>
       </header>
@@ -218,6 +334,44 @@ export default function EntityEditor(props: EditorProps) {
           <p className={styles.note}>To change this place's shape or position on the map, use <strong>Trace → Redraw</strong>.</p>
         )}
 
+        <div className={styles.field}>
+          <span>Image</span>
+          {previewUrl ? (
+            <div className={styles.imagePreview}>
+              <img src={previewUrl} alt="" />
+              <div className={styles.imagePreviewActions}>
+                <label className={styles.fileButton}>
+                  Replace
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    onChange={(e) => onPickImage(e.target.files?.[0] ?? null)}
+                    hidden
+                  />
+                </label>
+                <button type="button" onClick={onRemoveImage}>
+                  <UiIcon name="close" size={16} />
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <label className={cx(styles.fileButton, styles.fileButtonEmpty)}>
+              <UiIcon name="image" size={16} />
+              Choose image…
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                onChange={(e) => onPickImage(e.target.files?.[0] ?? null)}
+                hidden
+              />
+            </label>
+          )}
+          <span className={cx(styles.hint, imageError && styles.hintWarn)}>
+            {imageError ?? "Optional. Shown at the top of the entry's page. PNG, JPEG, WebP or GIF, up to 6 MB."}
+          </span>
+        </div>
+
         <label className={styles.field}>
           Summary
           <textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} />
@@ -281,7 +435,7 @@ export default function EntityEditor(props: EditorProps) {
         <p className={cx(styles.status, error && styles.statusError)} role="status">
           {error ?? (saved ? 'Saved. Reloading…' : '')}
         </p>
-        <button type="button" onClick={() => dialogRef.current?.close()} disabled={saving}>
+        <button type="button" onClick={attemptClose} disabled={saving}>
           Cancel
         </button>
         <button type="button" className={styles.primary} onClick={save} disabled={!ready || saving}>

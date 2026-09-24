@@ -58,15 +58,15 @@ export function polygonToPath(points: Point[]): string {
   return points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x} ${y}`).join(' ') + ' Z';
 }
 
-/** Twice the (unsigned) area, used only to compare polygons by size. */
-function polygonArea(points: Point[]): number {
+/** The (unsigned) area of a simple polygon, in map-coordinate units squared. */
+export function polygonArea(points: Point[]): number {
   let area2 = 0;
   for (let i = 0; i < points.length; i++) {
     const [x0, y0] = points[i];
     const [x1, y1] = points[(i + 1) % points.length];
     area2 += x0 * y1 - x1 * y0;
   }
-  return Math.abs(area2);
+  return Math.abs(area2) / 2;
 }
 
 /**
@@ -92,6 +92,11 @@ export function multiPolygonToPath(polygons: readonly Point[][]): string {
 /** The largest outline by area: the "mainland", as opposed to a smaller island. */
 export function largestPolygon(polygons: readonly Point[][]): Point[] {
   return polygons.reduce((best, next) => (polygonArea(next) > polygonArea(best) ? next : best));
+}
+
+/** Total area across every outline of a (possibly multi-part) territory. */
+export function multiPolygonArea(polygons: readonly Point[][]): number {
+  return polygons.reduce((sum, ring) => sum + polygonArea(ring), 0);
 }
 
 /** A good label spot for a multi-outline territory: the interior point of its largest outline. */

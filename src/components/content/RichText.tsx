@@ -30,6 +30,13 @@ interface RichTextProps {
   /** The entity this text belongs to, so it doesn't link to itself. */
   selfId?: string;
   className?: string;
+  /**
+   * Entity ids already linked once. Pass the same Set across multiple RichText
+   * calls for one page (e.g. an Overview block and the article below it) so
+   * "first mention" still spans all of them instead of resetting per call.
+   * Defaults to a fresh Set, i.e. "first mention" within just this markdown.
+   */
+  linked?: Set<string>;
 }
 
 /**
@@ -37,11 +44,14 @@ interface RichTextProps {
  * every piece of prose in the app (summaries, long-form content), so links
  * behave the same everywhere.
  */
-export function RichText({ markdown, selfId, className }: RichTextProps) {
+export function RichText({ markdown, selfId, className, linked }: RichTextProps) {
   const index = useWorld();
   const plugins = useMemo(
-    () => [[remarkEntityLinks, { resolver: index.links, selfId }]] as unknown as NonNullable<Options['remarkPlugins']>,
-    [index, selfId],
+    () =>
+      [[remarkEntityLinks, { resolver: index.links, selfId, linked }]] as unknown as NonNullable<
+        Options['remarkPlugins']
+      >,
+    [index, selfId, linked],
   );
 
   return (

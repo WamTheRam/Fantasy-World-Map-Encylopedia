@@ -42,9 +42,10 @@ src/data/history/**.json           events      type: event  (+ year, order)
 src/content/**/<id>.md             Markdown body; the file name IS the id
 ```
 
-`src/types/world.ts` is the contract. Every entry has `id`, `name`, `type`, optional `summary` (Markdown) and optional
-`relations: [{ label, target }]`. Places add `parent` plus a `polygon` or `coordinates`; events add an integer `year` and an
-optional `order`. The `Entity` type is the union of all three families.
+`src/types/world.ts` is the contract. Every entry has `id`, `name`, `type`, optional `summary` (Markdown), optional
+`relations: [{ label, target }]` and an optional `image` (a path under `public/`, e.g. `"images/aurelion.jpg"`, written
+there by the Edit dialog rather than embedded as base64). Places add `parent` plus a `polygon` or `coordinates`; events add
+an integer `year` and an optional `order`. The `Entity` type is the union of all three families.
 
 **Ids are unique across all kinds.** `validateWorld` enforces it (a person and a city can't share one), which is what
 makes an id in prose resolve to exactly one entry.
@@ -90,8 +91,9 @@ A link is written as an **id or name in text**, never a route. Resolution is thr
    for the route and renders a router `Link` (or a muted "broken link" span if the id is unknown).
 
 `entityPath` is the only place that knows where things live: places → `atlasPath` (`/atlas/<chain>`), events →
-`/history/<id>`, everything else → `/<category>/<id>`. Each entry's summary and Markdown body are joined and rendered as
-one document, so "first mention" spans both.
+`/history/<id>`, everything else → `/<category>/<id>`. `EntityProse` renders the summary as a visually distinct "Overview"
+above the Markdown body as the article, but both share one `linked` set (an optional param on `RichText`/`remarkEntityLinks`),
+so "first mention" still spans both blocks even though they're no longer one joined string.
 
 **Backlinks** (`WorldIndex.backlinksOf`) come from the same resolver: an entry links to `X` if a `relation` targets it or its
 text mentions it. A relation's label wins when both apply. `Connections` and `Linked from` render these, so the graph is
@@ -124,6 +126,11 @@ applies it to the DOM.
   frames; `setState` would re-render the whole map on each.
 - **Scale is published as a CSS variable (`--s`, px per map unit).** Labels and markers divide by it, so they stay a constant
   size while the map zooms under them, with no per-frame JS. Borders use `vector-effect: non-scaling-stroke`.
+- **Country label size and visibility are also just CSS, driven by area.** `lib/map/labelStyle.ts` (pure, unit-tested) maps
+  each country's `WorldIndex.areaOf(id)` to a font size and a reveal/fully-visible `--s` threshold, expressed as an
+  apparent on-screen px size so it doesn't depend on the map's coordinate units. `MapLabels` sets these as inline custom
+  properties per `<text>`; `Map.module.css` turns them into `font-size` and a `clamp()`-based fade, multiplied with the
+  existing selection-fade rather than fighting it for the one `opacity` value.
 - On resize the camera keeps the visible map's **top-left** fixed, so opening the side panel doesn't make the picture jump.
 - Interpolation is geometric in scale, and proportional in visible width for the centre, which keeps motion even.
 
@@ -157,21 +164,24 @@ Pure and unit-tested, imported by the dev server. The rule that matters most: **
 
 - **create** refuses if the id is used by *anything* (any kind, any file). It never overwrites.
 - **update** refuses unless exactly one file defines the id, and it must be the same kind.
-- Only listed fields may change (`editableFields`): name, summary, relations for everyone; colour for areas; icon for points;
-  year and order for events. Geometry, parent, id, type and unknown keys survive an edit. Clearing a field removes the key.
+- Only listed fields may change (`editableFields`): name, summary, relations and image for everyone; colour for areas; icon
+  for points; year and order for events. Geometry, parent, id, type and unknown keys survive an edit. Clearing a field
+  removes the key.
 - `applyGeometry` replaces **only** `polygon`/`coordinates` (validated: ≥3 points, finite numbers).
 
 ### The dev server: `tools/atlasDevSave.ts`
-A Vite plugin (`apply: 'serve'`) with two endpoints, both thin wrappers over `savePlan`:
+A Vite plugin (`apply: 'serve'`) with three endpoints, all thin wrappers over `savePlan`:
 
 | Endpoint | Purpose |
 | --- | --- |
 | `POST /__atlas/save` | Shapes. `create` a place, or `update` (replace only the shape of) an existing one |
 | `POST /__atlas/entity` | Information. Update or create any non-place entry, or update a place's info, plus its Markdown body |
+| `POST /__atlas/image` | Uploads one image (as a data URL) for an entity, writes it to `public/images/<id>.<ext>`, and returns the path to store in `image`. Replacing or removing an image deletes the old file so it doesn't linger as an orphan |
 
-Safety: it exists only under `npm run dev`; writes only inside `src/data` and `src/content`; folders come from a fixed list; ids
-must be valid slugs (so `../` is rejected); bodies are size-limited. It scans the data folders for who defines an id, so
-files an author has reorganised are found and edited **in place**.
+Safety: it exists only under `npm run dev`; writes only inside `src/data`, `src/content` and `public/images`; folders come
+from a fixed list; ids must be valid slugs (so `../` is rejected); bodies are size-limited (images capped at 6 MB, checked
+both by content-length and after decoding). It scans the data folders for who defines an id, so files an author has
+reorganised are found and edited **in place**.
 
 ### Redraw is a session, not a form fill
 An early version implemented "Redraw" by pre-filling the trace form's id/name/parent. That let a stale form follow you to
@@ -186,9 +196,13 @@ another place and overwrite the wrong entry, and let a name collision replace a 
 Uniqueness is defended in depth: the form, the server (`planSave`), and the validator (duplicate ids are an error).
 
 ### The Edit dialog: `components/editor`
-`EditButton` / `NewEntityButton` open `EntityEditor`, a native `<dialog>`: name, summary, a Markdown editor with Write/Preview
-(the preview is the real `RichText`), an "insert link" picker, a connections editor, and kind-specific fields. It posts to
-`/__atlas/entity`. Places are not creatable here (they need a shape); that's the Trace tool's job.
+`EditButton` / `NewEntityButton` open `EntityEditor`, a native `<dialog>`: name, summary, an optional image (upload,
+replace or remove, with an immediate local preview via `URL.createObjectURL` before it's saved), a Markdown editor with
+Write/Preview (the preview is the real `RichText`), an "insert link" picker, a connections editor, and kind-specific
+fields. It posts to `/__atlas/entity` (and, when the image changed, `/__atlas/image` first). Places are not creatable
+here (they need a shape); that's the Trace tool's job. Unsaved changes are tracked with a cheap `useMemo` diff against
+the dialog's opening values; closing the dialog while dirty (Cancel, the × button, a backdrop click, or Escape, which
+fires the `<dialog>`'s native `cancel` event) asks for confirmation before discarding.
 
 ### After a save: don't trust the reload
 After a data change Vite may hot-refresh in place, or reload the page, or both (a save that writes JSON and Markdown triggers two). The

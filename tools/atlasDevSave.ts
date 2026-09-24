@@ -20,6 +20,7 @@ import {
   applyEdits,
   applyGeometry,
   defaultContentFile,
+  ID_PATTERN,
   isPlaceKind,
   planSave,
   syncIslandIntoParent,
@@ -67,14 +68,22 @@ async function findMarkdown(src: string, id: string): Promise<string | null> {
   return files.find((f) => path.basename(f) === `${id}.md`) ?? null;
 }
 
-function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+function readBody(req: IncomingMessage, maxBytes = 2_000_000): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     let raw = '';
+    let tooLarge = false;
     req.on('data', (chunk) => {
       raw += chunk;
-      if (raw.length > 2_000_000) req.destroy();
+      if (raw.length > maxBytes) {
+        tooLarge = true;
+        req.destroy();
+      }
     });
     req.on('end', () => {
+      if (tooLarge) {
+        reject(new Error('Request body is too large.'));
+        return;
+      }
       try {
         resolve(JSON.parse(raw));
       } catch {
@@ -85,8 +94,18 @@ function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
   });
 }
 
+const IMAGE_MIME_EXT: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
+const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+const IMAGE_DATA_URL = /^data:(image\/(?:png|jpeg|webp|gif));base64,([a-zA-Z0-9+/=]+)$/;
+
 export function atlasDevSave(): Plugin {
   let src = path.join(process.cwd(), 'src');
+  let publicDir = path.join(process.cwd(), 'public');
 
   const reply = (res: ServerResponse, status: number, body: object) => {
     res.statusCode = status;
@@ -107,6 +126,7 @@ export function atlasDevSave(): Plugin {
     apply: 'serve',
     configResolved(config) {
       src = path.join(config.root, 'src');
+      publicDir = path.join(config.root, 'public');
     },
     configureServer(server) {
       // ---- shapes ---------------------------------------------------------------
@@ -182,6 +202,39 @@ export function atlasDevSave(): Plugin {
         }
       });
 
+      // ---- image upload -----------------------------------------------------------
+      // Stores the file itself under public/images, rather than embedding it as
+      // base64 in the entity's JSON. /__atlas/entity's "image" field then just holds
+      // the resulting path (e.g. "images/aurelion.jpg").
+      server.middlewares.use('/__atlas/image', async (req, res) => {
+        if (req.method !== 'POST') return reply(res, 405, { error: 'Use POST.' });
+        try {
+          const { id, dataUrl } = (await readBody(req, 9_000_000)) as { id: string; dataUrl: string };
+          if (typeof id !== 'string' || !ID_PATTERN.test(id)) return reply(res, 400, { error: 'Invalid id.' });
+          if (typeof dataUrl !== 'string') return reply(res, 400, { error: 'Missing image data.' });
+
+          const match = IMAGE_DATA_URL.exec(dataUrl);
+          if (!match) return reply(res, 400, { error: 'Use a PNG, JPEG, WebP or GIF image.' });
+          const [, mime, base64] = match;
+          const buffer = Buffer.from(base64, 'base64');
+          if (buffer.length > MAX_IMAGE_BYTES) return reply(res, 400, { error: 'Images must be 6 MB or smaller.' });
+
+          const dir = path.join(publicDir, 'images');
+          await mkdir(dir, { recursive: true });
+          const ext = IMAGE_MIME_EXT[mime];
+          const file = `${id}.${ext}`;
+          // Clear out a previous image for this id under a different extension, so
+          // replacing a PNG with a JPEG doesn't leave the old file behind as an orphan.
+          for (const entry of await readdir(dir).catch(() => [] as string[])) {
+            if (entry.startsWith(`${id}.`) && entry !== file) await unlink(path.join(dir, entry)).catch(() => {});
+          }
+          await writeFile(path.join(dir, file), buffer);
+          return reply(res, 200, { path: `images/${file}` });
+        } catch (error) {
+          reply(res, 400, { error: error instanceof Error ? error.message : 'Bad request.' });
+        }
+      });
+
       // ---- information ----------------------------------------------------------
       server.middlewares.use('/__atlas/entity', async (req, res) => {
         if (req.method !== 'POST') return reply(res, 405, { error: 'Use POST.' });
@@ -206,6 +259,14 @@ export function atlasDevSave(): Plugin {
           const previous = mode === 'update' ? await readJson(plan.file) : null;
           await writeJson(plan.file, applyEdits(previous, kind, id, fields ?? {}));
           written.push(`src/${plan.file}`);
+
+          // If the image was replaced or removed, delete the old file so it doesn't
+          // linger as an orphan. Only ever touches paths this app itself wrote.
+          const prevImage = typeof previous?.image === 'string' ? previous.image : null;
+          const nextImage = 'image' in (fields ?? {}) ? (typeof fields.image === 'string' ? fields.image : null) : prevImage;
+          if (prevImage && prevImage !== nextImage && prevImage.startsWith('images/') && !prevImage.includes('..')) {
+            await unlink(path.join(publicDir, prevImage)).catch(() => {});
+          }
 
           if (typeof body === 'string') {
             const current = await findMarkdown(src, id);

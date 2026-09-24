@@ -1,5 +1,6 @@
 import { CollapsibleSection } from '@/components/common/CollapsibleSection';
 import { Connections, EntityProse, LinkedFrom } from '@/components/content/EntityBody';
+import { EntityImage } from '@/components/content/EntityImage';
 import { IconChip, iconFor, typeLabel } from '@/components/map/locationIcons';
 import { useWorld } from '@/context/WorldContext';
 import { countryFill, islandFill, regionFill } from '@/lib/map/theme';
@@ -73,6 +74,7 @@ export function LocationInfo({ location, onNavigate }: LocationInfoProps) {
         </p>
       )}
 
+      <EntityImage entity={location} />
       <div className={styles.prose}>
         <EntityProse entity={location} />
       </div>

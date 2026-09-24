@@ -56,6 +56,8 @@ interface LocationBase {
   /** Short overview, written in Markdown. Names and ids in it become links automatically. */
   summary?: string;
   relations?: Relation[];
+  /** Path to an image, relative to `public/` (e.g. `"images/aurelion.jpg"`). Optional. */
+  image?: string;
 }
 
 export interface AreaLocation extends LocationBase {
@@ -124,6 +126,8 @@ export interface LoreEntity {
   type: LoreType;
   summary?: string;
   relations?: Relation[];
+  /** Path to an image, relative to `public/` (e.g. `"images/aurelion.jpg"`). Optional. */
+  image?: string;
 }
 
 /**
@@ -139,6 +143,8 @@ export interface HistoryEvent {
   order?: number;
   summary?: string;
   relations?: Relation[];
+  /** Path to an image, relative to `public/` (e.g. `"images/aurelion.jpg"`). Optional. */
+  image?: string;
 }
 
 /** Anything with an id that can be linked to. */

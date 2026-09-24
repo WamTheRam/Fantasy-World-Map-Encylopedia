@@ -85,7 +85,7 @@ export function planSave(args: { mode: 'create' | 'update'; id: string; kind: st
 // ---------------------------------------------------------------------------
 
 export function editableFields(kind: string): readonly string[] {
-  const common = ['name', 'summary', 'relations'];
+  const common = ['name', 'summary', 'relations', 'image'];
   if (kind === 'country' || kind === 'region' || kind === 'island') return [...common, 'color'];
   if (kind === 'city' || kind === 'poi') return [...common, 'icon'];
   if (kind === 'event') return [...common, 'year', 'order'];
@@ -113,6 +113,7 @@ export function validateEdits(kind: string, fields: Record<string, unknown>): st
   if (typeof fields.icon === 'string' && fields.icon !== '' && !(LOCATION_ICONS as readonly string[]).includes(fields.icon)) {
     return `Unknown icon "${fields.icon}".`;
   }
+  if ('image' in fields && fields.image !== null && typeof fields.image !== 'string') return '"image" must be a string path or null.';
   return null;
 }
 

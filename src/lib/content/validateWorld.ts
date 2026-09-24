@@ -240,6 +240,7 @@ function parseEntity(raw: unknown, fail: (message: string) => void): Entity | nu
   if (!ok) return null;
 
   need(raw.summary === undefined || typeof raw.summary === 'string', `${label}: "summary" must be a string.`);
+  need(raw.image === undefined || (typeof raw.image === 'string' && raw.image.trim() !== ''), `${label}: "image" must be a non-empty string path, e.g. "images/my-entity.jpg".`);
   if (parseRelations(raw.relations, label, (m) => { fail(m); ok = false; }) === false) ok = false;
 
   const type = raw.type as string;

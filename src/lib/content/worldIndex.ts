@@ -1,4 +1,4 @@
-import { interiorLabelPointMulti, multiPolygonBounds, multiPolygonToPath, type Bounds } from '@/lib/map/geometry';
+import { interiorLabelPointMulti, multiPolygonArea, multiPolygonBounds, multiPolygonToPath, type Bounds } from '@/lib/map/geometry';
 import {
   isArea,
   type AtlasLocation,
@@ -38,7 +38,7 @@ export class WorldIndex {
   private readonly everything = new Map<string, Entity>();
   private readonly markdown: ReadonlyMap<string, string>;
   private readonly childrenByParent = new Map<string | null, AtlasLocation[]>();
-  private readonly derived = new Map<string, { bounds: Bounds; labelPoint: Point; svgPath: string | null }>();
+  private readonly derived = new Map<string, { bounds: Bounds; labelPoint: Point; svgPath: string | null; area: number }>();
   private resolver: LinkResolver | null = null;
   private backlinkMap: Map<string, Map<string, Backlink>> | null = null;
 
@@ -132,6 +132,11 @@ export class WorldIndex {
     return path;
   }
 
+  /** An area's territory size, in map-coordinate units squared. 0 for a point location. */
+  areaOf(id: string): number {
+    return this.derivedFor(id).area;
+  }
+
   // ---- every kind of entity -------------------------------------------------
 
   /** Anything with an id: a place, person, faction, deity, event... */
@@ -206,10 +211,11 @@ export class WorldIndex {
             ? [location.labelPosition.x, location.labelPosition.y]
             : interiorLabelPointMulti(location.polygons),
           svgPath: multiPolygonToPath(location.polygons),
+          area: multiPolygonArea(location.polygons),
         };
       } else {
         const { x, y } = location.coordinates;
-        cached = { bounds: { minX: x, minY: y, maxX: x, maxY: y }, labelPoint: [x, y], svgPath: null };
+        cached = { bounds: { minX: x, minY: y, maxX: x, maxY: y }, labelPoint: [x, y], svgPath: null, area: 0 };
       }
       this.derived.set(id, cached);
     }
