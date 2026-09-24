@@ -1,0 +1,8 @@
+{
+  "id": "alalbero",
+  "name": "Alalbero",
+  "type": "city",
+  "parent": "the-moon",
+  "icon": "village",
+  "coordinates": { "x": 3405, "y": 1542 }
+}

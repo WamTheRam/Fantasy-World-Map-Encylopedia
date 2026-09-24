@@ -63,8 +63,8 @@ export const ALLOWED_PARENTS: Record<LocationType, readonly LocationType[]> = {
   country: [],
   region: ['country'],
   island: ['country'],
-  city: ['region', 'country'],
-  poi: ['country', 'region', 'city'],
+  city: ['region', 'country', 'island'],
+  poi: ['country', 'region', 'city', 'island'],
 };
 
 const isOffMap = (x: number, y: number, map: { width: number; height: number }) =>

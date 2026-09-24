@@ -5,9 +5,10 @@ import { isPoint } from '@/types/world';
  * Level-of-detail rules: what the map draws for a given selection.
  *
  *   nothing selected   countries only
- *   country selected   + that country's regions
+ *   country selected   + that country's regions and islands
  *   region selected    + that region's cities and points of interest
- *   city selected      same as its region
+ *   island selected    + that island's cities and points of interest
+ *   city selected      same as its region (or island)
  *
  * Keeping these rules in one small function (rather than scattered through
  * components) makes the behaviour easy to see and to change.
@@ -29,6 +30,7 @@ export function computeVisibility(index: WorldIndex, selectedId: string | null):
   const chain = index.chainTo(selectedId);
   const country = chain.find((l) => l.type === 'country');
   const region = chain.find((l) => l.type === 'region');
+  const island = chain.find((l) => l.type === 'island');
 
   const regionIds = country
     ? index.childrenOf(country.id).filter((l) => l.type === 'region').map((l) => l.id)
@@ -37,13 +39,15 @@ export function computeVisibility(index: WorldIndex, selectedId: string | null):
     ? index.childrenOf(country.id).filter((l) => l.type === 'island').map((l) => l.id)
     : [];
 
-  // Inside a region, show everything in it (including places nested in cities).
-  // At country level, only show markers attached directly to the country.
+  // Inside a region or an island, show everything in it (including places nested in
+  // cities). At country level, only show markers attached directly to the country.
   let points = region
     ? index.descendantsOf(region.id)
-    : country
-      ? index.childrenOf(country.id)
-      : [];
+    : island
+      ? index.descendantsOf(island.id)
+      : country
+        ? index.childrenOf(country.id)
+        : [];
   points = points.filter(isPoint);
 
   return { countryId: country?.id ?? null, regionIds, islandIds, pointIds: points.map((l) => l.id) };

@@ -2,6 +2,7 @@
   "id": "tynagrad",
   "name": "The Isles of Tynagrad",
   "type": "country",
+  "color": "#122c53",
   "polygons": [
     [
       [2797, 2258],
