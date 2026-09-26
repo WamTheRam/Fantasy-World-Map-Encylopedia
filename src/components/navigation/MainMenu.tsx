@@ -1,16 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { UiIcon } from '@/components/common/UiIcon';
 import { cx } from '@/components/common/cx';
 import { useWorld } from '@/context/WorldContext';
 import { NAV_SECTIONS } from '@/lib/navigation/sections';
+import { setActiveWorldId } from '@/lib/worlds/worldStore';
+import { WorldSettingsDialog } from './WorldSettingsDialog';
 import styles from './Navigation.module.css';
 
 /** Hamburger button plus the slide-in drawer listing the encyclopedia's sections. */
 export function MainMenu() {
   const { world } = useWorld();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -25,6 +29,16 @@ export function MainMenu() {
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [open]);
+
+  /**
+   * Leaves the world and goes back to Home. Only ever changes which world is *active*
+   * (`worldStore`); the world itself, and its data, are untouched and stay listed on Home.
+   */
+  const returnToHome = () => {
+    setOpen(false);
+    setActiveWorldId(null);
+    navigate('/');
+  };
 
   const drawer = (
     <>
@@ -67,6 +81,24 @@ export function MainMenu() {
             </li>
           ))}
         </ul>
+
+        <div className={styles.menuFooter}>
+          <button
+            type="button"
+            className={styles.footerButton}
+            onClick={() => {
+              setOpen(false);
+              setSettingsOpen(true);
+            }}
+          >
+            <UiIcon name="palette" />
+            <span className={styles.footerLabel}>World Settings</span>
+          </button>
+          <button type="button" className={styles.footerButton} onClick={returnToHome}>
+            <UiIcon name="home" />
+            <span className={styles.footerLabel}>Return to Home</span>
+          </button>
+        </div>
       </nav>
     </>
   );
@@ -90,6 +122,7 @@ export function MainMenu() {
         to the pill's rectangle.
       */}
       {createPortal(drawer, document.body)}
+      <WorldSettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   );
 }

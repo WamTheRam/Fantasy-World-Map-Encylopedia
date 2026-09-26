@@ -14,7 +14,7 @@ from those outlines, not from the image. When you're done, the image can go.
 
 ```
  Your Paint image  ──(you click around the shapes)──►  outlines saved as files  ──►  the interactive atlas
-   (just a guide)          the Trace tool                 src/data/locations/
+   (just a guide)          the Trace tool          src/data/worlds/<your-world>/locations/
 ```
 
 You do this once per shape: each country, each region, and each city. The Trace tool only handles **where things are**.
@@ -26,11 +26,17 @@ What they *say* (descriptions, lore, connections) is written afterwards with the
 Paint shows it in the bar along the bottom of the window (for example `1600 × 1000px`). If not, look under
 *File → Properties*. Write the two numbers down.
 
-**2. Put the image in the project.**
+**2. Create a world for it.**
+Start the atlas (`npm run dev`), open the address it prints, and on the Home page click **Create World**. This gives
+your world an id and a folder of its own (`src/data/worlds/<id>/`), completely separate from the demo world and from
+any other world you make -- nothing you do to it can affect them. Open it.
+
+**3. Put the image in the project.**
 Copy your PNG into the folder `public/reference/`, for example `public/reference/my-map.png`.
 
-**3. Tell the atlas about it.**
-Open `src/data/world.json` and set `width` and `height` to your image's size, and add the `referenceImage` line:
+**4. Tell the atlas about it.**
+Open `src/data/worlds/<id>/world.json` (the folder Create World just made) and set `width` and `height` to your
+image's size, and add the `referenceImage` line:
 
 ```json
 {
@@ -47,13 +53,12 @@ Open `src/data/world.json` and set `width` and `height` to your image's size, an
 > **Why the size matters:** the numbers must match your image's pixel size so the outlines you click line up with the
 > picture. If your outlines later look shifted or squashed compared with the image, this is almost always why.
 
-**4. Clear out the demo world.**
-The demo is a tour of every feature, so you'll want it gone before building your own. The short version (the full list is
-in the README's *Replacing the demo world*): delete the `.json` files inside `src/data/locations/`, `src/data/entities/`
-and `src/data/history/`, the `.md` files in `src/content/`, and `src/lib/content/demoWorld.test.ts`. (Leave the folders.)
-You can keep the demo until you're comfortable; it will just be on the map alongside your world.
+**5. Reload the page.**
+Vite notices the new `world.json` and reloads on its own; if it doesn't, refresh by hand. Open your world from Home
+again -- since it started empty, there's nothing to clear out, and the demo world (if you still have one) stays exactly
+as it was on its own Home entry.
 
-**5. Start the atlas.**
+**6. Start tracing.**
 ```bash
 npm run dev
 ```

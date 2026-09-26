@@ -1,8 +1,0 @@
-{
-  "id": "thornwatch",
-  "name": "Thornwatch",
-  "type": "city",
-  "parent": "aurelion",
-  "icon": "town",
-  "coordinates": { "x": 3282, "y": 1173 }
-}

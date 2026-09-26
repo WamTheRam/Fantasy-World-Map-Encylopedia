@@ -32,23 +32,42 @@ map, links, timeline, and finally the development-only editing tools.
 | **`import.meta.glob`** | Vite finds every JSON and Markdown file in the data folders. This is what makes "add a file, get an entry" work |
 | **Vitest** | Same config as the build; tests run in milliseconds and include a validity check over the real data |
 
+## Worlds and the Home page
+
+The app manages more than one world (`src/lib/worlds/worldStore.ts`, `src/pages/HomePage.tsx`). A world is either:
+
+- **file-backed** -- a real folder under `src/data/worlds/<id>/` (and `src/content/worlds/<id>/`), discovered by
+  `loadWorld.ts`'s glob at build/dev-server start. This is how the app's own bundled world (`argoyll`) is stored, and
+  it's fully editable in development.
+- **local** -- browser-only, living in `localStorage`. Every world made from Home's "Create World" gets one of these,
+  which is what makes world creation work in a production build (no server to write files to). In development,
+  creating a world *also* asks the dev server to scaffold a matching folder (`POST /__atlas/world`), so from the next
+  reload on it's file-backed too, indistinguishable from `argoyll`.
+
+`WorldShell` (`src/components/navigation/WorldShell.tsx`) resolves whichever world is active into a `WorldIndex` the
+same way either way (`worldStore.resolveWorldLoad`), so the rest of the app -- `useWorld()`, `WorldIndex`, every page
+below -- never needs to know which kind it's looking at. Only the dev-only editing tools (Trace, Edit, New) care: they
+hide themselves for a local world, since there's no folder yet for them to save into (`isFileBackedWorldId`).
+
 ## Data model
 
 ```
-src/data/world.json                world name + map coordinate space
-src/data/locations/**.json         places      type: country | region | city | poi
-src/data/entities/**.json          lore        type: person | faction | organization | deity | politics | culture
-src/data/history/**.json           events      type: event  (+ year, order)
-src/content/**/<id>.md             Markdown body; the file name IS the id
+src/data/worlds/<id>/world.json            world name + map coordinate space
+src/data/worlds/<id>/locations/**.json     places      type: country | region | city | poi
+src/data/worlds/<id>/entities/**.json      lore        type: person | faction | organization | deity | politics | culture
+src/data/worlds/<id>/history/**.json       events      type: event  (+ year, order)
+src/content/worlds/<id>/**/<entityId>.md   Markdown body; the file name IS the entity's id
 ```
 
 `src/types/world.ts` is the contract. Every entry has `id`, `name`, `type`, optional `summary` (Markdown), optional
-`relations: [{ label, target }]` and an optional `image` (a path under `public/`, e.g. `"images/aurelion.jpg"`, written
-there by the Edit dialog rather than embedded as base64). Places add `parent` plus a `polygon` or `coordinates`; events add
-an integer `year` and an optional `order`. The `Entity` type is the union of all three families.
+`relations: [{ label, target }]` and an optional `image` (a path under `public/`, e.g.
+`"images/worlds/argoyll/aurelion.jpg"`, written there by the Edit dialog rather than embedded as base64). Places add
+`parent` plus a `polygon` or `coordinates`; events add an integer `year` and an optional `order`. The `Entity` type is
+the union of all three families.
 
-**Ids are unique across all kinds.** `validateWorld` enforces it (a person and a city can't share one), which is what
-makes an id in prose resolve to exactly one entry.
+**Ids are unique within a world**, not across worlds. `validateWorld` enforces it per world (a person and a city in the
+same world can't share one; the same id in two different worlds is fine), which is what makes an id in prose resolve to
+exactly one entry *within the world it's read in*.
 
 **Events are separate files, not `{ year, events: [] }`.** Each event is a first-class entity with its own id, Markdown
 body, connections and editor. `year` is only a sort/group key; grouping happens at load time in `groupByYear`. This
@@ -57,11 +76,12 @@ reads the same as nested JSON but means a year can never be mistaken for an iden
 ### Loading and validation
 
 ```
- src/data/**/*.json ─┐
-                     ├─ loadWorld.ts (globs) ─► validateWorld ─► issues ─► errors: app shows a readable report
- src/content/**/*.md ┘                              │                       warnings: dev banner / console
-                                                    ▼
-                                               WorldIndex ── React context (useWorld) ── pages & components
+ src/data/worlds/*/**/*.json ─┐
+                              ├─ loadWorld.ts (globs) ─► validateWorld ─► issues ─► errors: app shows a readable report
+ src/content/worlds/*/**/*.md ┘                              │                       warnings: dev banner / console
+                                                              ▼
+                                            worldLoads: Record<id, WorldLoadResult> ── WorldShell picks one ──►
+                                            WorldIndex ── React context (useWorld) ── pages & components
 ```
 
 `validateWorld` parses each file by its `type`, reports problems across **all** files at once, names the file and says how
@@ -170,18 +190,22 @@ Pure and unit-tested, imported by the dev server. The rule that matters most: **
 - `applyGeometry` replaces **only** `polygon`/`coordinates` (validated: ≥3 points, finite numbers).
 
 ### The dev server: `tools/atlasDevSave.ts`
-A Vite plugin (`apply: 'serve'`) with three endpoints, all thin wrappers over `savePlan`:
+A Vite plugin (`apply: 'serve'`) with four endpoints, all thin wrappers over `savePlan`:
 
 | Endpoint | Purpose |
 | --- | --- |
-| `POST /__atlas/save` | Shapes. `create` a place, or `update` (replace only the shape of) an existing one |
-| `POST /__atlas/entity` | Information. Update or create any non-place entry, or update a place's info, plus its Markdown body |
-| `POST /__atlas/image` | Uploads one image (as a data URL) for an entity, writes it to `public/images/<id>.<ext>`, and returns the path to store in `image`. Replacing or removing an image deletes the old file so it doesn't linger as an orphan |
+| `POST /__atlas/world` | Scaffolds a brand-new world's `world.json` under `src/data/worlds/<id>/`. Called by Home's "Create World" |
+| `POST /__atlas/save` | Shapes. `create` a place, or `update` (replace only the shape of) an existing one, within one `worldId` |
+| `POST /__atlas/entity` | Information. Update or create any non-place entry, or update a place's info, plus its Markdown body, within one `worldId` |
+| `POST /__atlas/image` | Uploads one image (as a data URL) for an entity, writes it to `public/images/worlds/<worldId>/<id>.<ext>`, and returns the path to store in `image`. Replacing or removing an image deletes the old file so it doesn't linger as an orphan |
 
-Safety: it exists only under `npm run dev`; writes only inside `src/data`, `src/content` and `public/images`; folders come
-from a fixed list; ids must be valid slugs (so `../` is rejected); bodies are size-limited (images capped at 6 MB, checked
-both by content-length and after decoding). It scans the data folders for who defines an id, so files an author has
-reorganised are found and edited **in place**.
+Every endpoint except `/__atlas/world` takes a `worldId` and refuses to run unless that world already has a
+`world.json` on disk -- only `/__atlas/world` may create that folder in the first place. Safety otherwise as before:
+writes only inside `src/data/worlds/<worldId>`, `src/content/worlds/<worldId>` and `public/images/worlds/<worldId>`;
+folders below that come from a fixed list; every id (world or entity) must be a valid slug (so `../` is rejected);
+bodies are size-limited (images capped at 6 MB, checked both by content-length and after decoding). It scans one
+world's data folders for who defines an id, so files an author has reorganised within that world are found and
+edited **in place** -- and so the same id can be reused in a different world without conflict.
 
 ### Redraw is a session, not a form fill
 An early version implemented "Redraw" by pre-filling the trace form's id/name/parent. That let a stale form follow you to
@@ -223,7 +247,8 @@ Unit tests (Vitest) cover the pure logic: geometry and camera maths; validation 
 event years, relations, warnings); the link resolver (explicit, id, name, "The" aliases, boundaries, first-mention,
 ambiguity, self-links); timeline grouping and spacing; the save rules (create-never-overwrites, update-only-existing,
 no kind changes, field whitelisting, geometry-only redraw, path-traversal rejection); URL resolution and the level-of-detail rules.
-`worldData.test.ts` validates whatever world is in `src/data`; `demoWorld.test.ts` pins the bundled demo.
+`worldData.test.ts` validates whatever world ships as `argoyll` under `src/data/worlds/`; `demoWorld.test.ts` pins the
+bundled demo's content specifically. `worldStore.test.ts` covers the multi-world registry itself.
 
 Interaction (click-to-zoom, drag not selecting, links across pages, timeline expansion, redraw sessions, Edit/Create, the "Saved" note)
 was verified end-to-end in headless Chromium during development but is not yet automated. Adding Playwright tests for it is the natural next step.

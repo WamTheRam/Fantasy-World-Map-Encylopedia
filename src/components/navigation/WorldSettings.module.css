@@ -1,0 +1,107 @@
+.dialog {
+  width: min(26rem, 92vw);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 24px 64px rgba(43, 33, 29, 0.28);
+}
+
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  animation: pop 0.22s var(--ease);
+}
+
+.dialog::backdrop {
+  background: rgba(43, 33, 29, 0.42);
+}
+
+.body {
+  padding: 18px 22px 24px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.kicker {
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.heading {
+  margin-top: 2px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 560;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--paper-sunk);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.fieldLabel {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.colorRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.colorInput {
+  width: 48px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+
+.colorValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+
+.fieldHint {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}

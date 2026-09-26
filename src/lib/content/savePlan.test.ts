@@ -1,56 +1,71 @@
 import { describe, expect, it } from 'vitest';
+import type { Point } from '../../types/world';
 import { applyEdits, applyGeometry, defaultContentFile, defaultDataFile, editableFields, planSave, sanitizeRelations, syncIslandIntoParent, validateEdits } from './savePlan';
 
 const existing = (file: string, type: string) => ({ file, type });
 
 describe('planSave: create', () => {
   it('puts new things in the folder for their kind', () => {
-    expect(defaultDataFile('region', 'x')).toBe('data/locations/regions/x.json');
-    expect(defaultDataFile('island', 'x')).toBe('data/locations/islands/x.json');
-    expect(defaultDataFile('poi', 'x')).toBe('data/locations/points-of-interest/x.json');
-    expect(defaultDataFile('deity', 'x')).toBe('data/entities/pantheon/x.json');
-    expect(defaultDataFile('person', 'x')).toBe('data/entities/people/x.json');
-    expect(defaultDataFile('event', 'x')).toBe('data/history/x.json');
-    expect(defaultContentFile('city', 'x')).toBe('content/locations/x.md');
-    expect(defaultContentFile('event', 'x')).toBe('content/history/x.md');
-    expect(defaultContentFile('faction', 'x')).toBe('content/factions/x.md');
+    expect(defaultDataFile('argoyll', 'region', 'x')).toBe('data/worlds/argoyll/locations/regions/x.json');
+    expect(defaultDataFile('argoyll', 'island', 'x')).toBe('data/worlds/argoyll/locations/islands/x.json');
+    expect(defaultDataFile('argoyll', 'poi', 'x')).toBe('data/worlds/argoyll/locations/points-of-interest/x.json');
+    expect(defaultDataFile('argoyll', 'deity', 'x')).toBe('data/worlds/argoyll/entities/pantheon/x.json');
+    expect(defaultDataFile('argoyll', 'person', 'x')).toBe('data/worlds/argoyll/entities/people/x.json');
+    expect(defaultDataFile('argoyll', 'event', 'x')).toBe('data/worlds/argoyll/history/x.json');
+    expect(defaultContentFile('argoyll', 'city', 'x')).toBe('content/worlds/argoyll/locations/x.md');
+    expect(defaultContentFile('argoyll', 'event', 'x')).toBe('content/worlds/argoyll/history/x.md');
+    expect(defaultContentFile('argoyll', 'faction', 'x')).toBe('content/worlds/argoyll/factions/x.md');
   });
 
   it('refuses to create over ANY existing id, whatever it is', () => {
-    const plan = planSave({ mode: 'create', id: 'central-plains', kind: 'city', existing: [existing('data/locations/regions/central-plains.json', 'region')] });
+    const plan = planSave({
+      mode: 'create',
+      worldId: 'argoyll',
+      id: 'central-plains',
+      kind: 'city',
+      existing: [existing('data/worlds/argoyll/locations/regions/central-plains.json', 'region')],
+    });
     expect(plan).toMatchObject({ ok: false, status: 409 });
     expect(plan.ok === false && plan.error).toContain('already used');
   });
 
   it('creates when the id is free', () => {
-    expect(planSave({ mode: 'create', id: 'new-one', kind: 'person', existing: [] })).toEqual({ ok: true, file: 'data/entities/people/new-one.json' });
+    expect(planSave({ mode: 'create', worldId: 'argoyll', id: 'new-one', kind: 'person', existing: [] })).toEqual({
+      ok: true,
+      file: 'data/worlds/argoyll/entities/people/new-one.json',
+    });
   });
 
-  it('rejects bad ids and unknown kinds', () => {
-    expect(planSave({ mode: 'create', id: '../evil', kind: 'person', existing: [] })).toMatchObject({ ok: false, status: 400 });
-    expect(planSave({ mode: 'create', id: 'Bad Id', kind: 'person', existing: [] })).toMatchObject({ ok: false, status: 400 });
-    expect(planSave({ mode: 'create', id: 'ok', kind: 'wizard', existing: [] })).toMatchObject({ ok: false, status: 400 });
+  it('rejects bad ids, bad world ids, and unknown kinds', () => {
+    expect(planSave({ mode: 'create', worldId: 'argoyll', id: '../evil', kind: 'person', existing: [] })).toMatchObject({ ok: false, status: 400 });
+    expect(planSave({ mode: 'create', worldId: 'argoyll', id: 'Bad Id', kind: 'person', existing: [] })).toMatchObject({ ok: false, status: 400 });
+    expect(planSave({ mode: 'create', worldId: 'argoyll', id: 'ok', kind: 'wizard', existing: [] })).toMatchObject({ ok: false, status: 400 });
+    expect(planSave({ mode: 'create', worldId: '../evil', id: 'ok', kind: 'person', existing: [] })).toMatchObject({ ok: false, status: 400 });
   });
 });
 
 describe('planSave: update', () => {
   it('updates the one file that defines the id, wherever it lives', () => {
-    expect(planSave({ mode: 'update', id: 'a', kind: 'region', existing: [existing('data/locations/odd/place/a.json', 'region')] })).toEqual({
+    expect(
+      planSave({ mode: 'update', worldId: 'argoyll', id: 'a', kind: 'region', existing: [existing('data/worlds/argoyll/locations/odd/place/a.json', 'region')] }),
+    ).toEqual({
       ok: true,
-      file: 'data/locations/odd/place/a.json',
+      file: 'data/worlds/argoyll/locations/odd/place/a.json',
     });
   });
 
   it('refuses to update something that does not exist', () => {
-    expect(planSave({ mode: 'update', id: 'ghost', kind: 'region', existing: [] })).toMatchObject({ ok: false, status: 404 });
+    expect(planSave({ mode: 'update', worldId: 'argoyll', id: 'ghost', kind: 'region', existing: [] })).toMatchObject({ ok: false, status: 404 });
   });
 
   it('refuses to change what kind of thing an id is', () => {
-    expect(planSave({ mode: 'update', id: 'a', kind: 'city', existing: [existing('x.json', 'region')] })).toMatchObject({ ok: false, status: 400 });
+    expect(planSave({ mode: 'update', worldId: 'argoyll', id: 'a', kind: 'city', existing: [existing('x.json', 'region')] })).toMatchObject({ ok: false, status: 400 });
   });
 
   it('refuses when an id is already defined twice, rather than guessing', () => {
-    expect(planSave({ mode: 'update', id: 'a', kind: 'region', existing: [existing('one.json', 'region'), existing('two.json', 'region')] })).toMatchObject({ ok: false, status: 409 });
+    expect(
+      planSave({ mode: 'update', worldId: 'argoyll', id: 'a', kind: 'region', existing: [existing('one.json', 'region'), existing('two.json', 'region')] }),
+    ).toMatchObject({ ok: false, status: 409 });
   });
 });
 
@@ -120,8 +135,8 @@ describe('applyGeometry', () => {
 
   it('accepts several disconnected outlines (a mainland plus islands)', () => {
     const before = { id: 'c', name: 'C', type: 'country', polygons: [[[0, 0], [1, 0], [1, 1]]] };
-    const mainland = [[0, 0], [10, 0], [10, 10], [0, 10]];
-    const island = [[20, 20], [22, 20], [22, 22]];
+    const mainland: Point[] = [[0, 0], [10, 0], [10, 10], [0, 10]];
+    const island: Point[] = [[20, 20], [22, 20], [22, 22]];
     expect(applyGeometry(before, { polygons: [mainland, island] }).polygons).toEqual([mainland, island]);
   });
 
@@ -137,9 +152,9 @@ describe('applyGeometry', () => {
 });
 
 describe('syncIslandIntoParent', () => {
-  const mainland = [[0, 0], [100, 0], [100, 100], [0, 100]];
-  const islandOld = [[10, 10], [12, 10], [12, 12]];
-  const islandNew = [[50, 50], [52, 50], [52, 52]];
+  const mainland: Point[] = [[0, 0], [100, 0], [100, 100], [0, 100]];
+  const islandOld: Point[] = [[10, 10], [12, 10], [12, 12]];
+  const islandNew: Point[] = [[50, 50], [52, 50], [52, 52]];
 
   it('appends a new island (nothing old to remove)', () => {
     expect(syncIslandIntoParent([mainland], [], [islandNew])).toEqual([mainland, islandNew]);
@@ -154,7 +169,7 @@ describe('syncIslandIntoParent', () => {
   });
 
   it('removes every old ring an island contributed, even if it had several', () => {
-    const islandOld2 = [[60, 60], [62, 60], [62, 62]];
+    const islandOld2: Point[] = [[60, 60], [62, 60], [62, 62]];
     expect(syncIslandIntoParent([mainland, islandOld, islandOld2], [islandOld, islandOld2], [islandNew])).toEqual([mainland, islandNew]);
   });
 });

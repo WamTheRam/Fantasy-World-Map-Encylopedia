@@ -1,0 +1,10 @@
+{
+  "id": "campanella",
+  "name": "Campanella",
+  "type": "city",
+  "parent": "the-sun",
+  "icon": "capital",
+  "image": "images/campanella.png",
+  "coordinates": { "x": 3343, "y": 1250 },
+  "summary": "Campanella is the ancient capital of the **Sun**. Carved into and built upon the slopes of a great mountain. The city rises in enormous terraces toward the heavens, with its highest districts disappearing into the clouds. At its peak stands the palace of the Golden Dragon - Vouivre, watching over the city and the lands beneath it."
+}

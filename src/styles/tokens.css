@@ -21,9 +21,11 @@
   --accent: #7d3546;
   --accent-soft: #ead6d9;
 
-  /* Map */
+  /* Map: sea-shallow (the pale "shore" outline halo around land) is always derived
+     from sea, not set independently, so a world's chosen background colour automatically
+     gets a matching lighter shoreline -- see WorldShell.tsx, which overrides --sea per world. */
   --sea: #c9d6d1;
-  --sea-shallow: #dde7e3;
+  --sea-shallow: color-mix(in srgb, var(--sea) 62%, white 38%);
   --label-halo: rgba(248, 244, 234, 0.88);
 
   /* Type */

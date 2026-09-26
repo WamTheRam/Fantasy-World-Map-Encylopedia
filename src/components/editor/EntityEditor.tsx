@@ -209,7 +209,7 @@ export default function EntityEditor(props: EditorProps) {
         const imgResponse = await fetch(`${import.meta.env.BASE_URL}__atlas/image`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ id, dataUrl }),
+          body: JSON.stringify({ worldId: index.world.id, id, dataUrl }),
         });
         const imgResult = (await imgResponse.json()) as { path?: string; error?: string };
         if (!imgResponse.ok) throw new Error(imgResult.error ?? 'Image upload failed.');
@@ -233,7 +233,7 @@ export default function EntityEditor(props: EditorProps) {
       const response = await fetch(`${import.meta.env.BASE_URL}__atlas/entity`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ mode: props.mode, id, kind, fields, body }),
+        body: JSON.stringify({ worldId: index.world.id, mode: props.mode, id, kind, fields, body }),
       });
       const result = (await response.json()) as { files?: string[]; error?: string };
       if (!response.ok) throw new Error(result.error ?? 'Save failed.');

@@ -1,0 +1,8 @@
+{
+  "id": "lightkeepers-oath",
+  "name": "Lightkeeper’s Oath",
+  "type": "poi",
+  "parent": "leuchtturm",
+  "icon": "temple",
+  "coordinates": { "x": 3290, "y": 2312 }
+}

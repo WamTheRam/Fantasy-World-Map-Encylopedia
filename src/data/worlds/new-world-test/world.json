@@ -1,0 +1,8 @@
+{
+  "id": "new-world-test",
+  "name": "New world test",
+  "map": {
+    "width": 4000,
+    "height": 3000
+  }
+}

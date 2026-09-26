@@ -1,0 +1,12 @@
+{
+  "id": "new-world-test-1",
+  "name": "New world test 1",
+  "type": "country",
+  "polygons": [
+    [
+      [2545, 807],
+      [1776, 1171],
+      [1772, 497]
+    ]
+  ]
+}

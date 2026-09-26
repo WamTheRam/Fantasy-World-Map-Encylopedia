@@ -4,6 +4,7 @@ import type { WorldIndex } from '@/lib/content/worldIndex';
 import { computeFocusView } from '@/lib/map/focus';
 import { countryFill, islandFill, regionFill } from '@/lib/map/theme';
 import { computeVisibility } from '@/lib/map/visibility';
+import { isFileBackedWorldId } from '@/lib/worlds/worldStore';
 import { isArea, isPoint } from '@/types/world';
 import { AreaShape, type AreaStatus } from './AreaShape';
 import { CoordinateReadout } from './CoordinateReadout';
@@ -33,6 +34,11 @@ interface MapCanvasProps {
 export function MapCanvas({ index, selectedId, onSelect }: MapCanvasProps) {
   const { map } = index.world;
   const viewport = useMapViewport(map);
+  // The dev save server writes into a world's own folder under src/data/worlds/<id>, which
+  // only exists for a file-backed world. A browser-only world has no such folder, so hide
+  // Trace there rather than trying to save somewhere that doesn't exist. See EditButton.tsx
+  // for the equivalent guard on entity editing.
+  const traceAvailable = Boolean(TraceTool) && isFileBackedWorldId(index.world.id);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [referenceVisible, setReferenceVisible] = useState(true);
   const [traceSlot, setTraceSlot] = useState<SVGGElement | null>(null);
@@ -189,7 +195,7 @@ export function MapCanvas({ index, selectedId, onSelect }: MapCanvasProps) {
           ))}
         </g>
 
-        {TraceTool && <g ref={setTraceSlot} />}
+        {traceAvailable && <g ref={setTraceSlot} />}
       </svg>
 
       <MapTooltip containerRef={viewport.containerRef} content={tooltip} />
@@ -200,7 +206,7 @@ export function MapCanvas({ index, selectedId, onSelect }: MapCanvasProps) {
         reference={reference ? { visible: referenceVisible, onToggle: () => setReferenceVisible((v) => !v) } : undefined}
       />
       {import.meta.env.DEV && <CoordinateReadout viewport={viewport} />}
-      {TraceTool && (
+      {traceAvailable && TraceTool && (
         <Suspense fallback={null}>
           <TraceTool index={index} selectedId={selectedId} viewport={viewport} layerSlot={traceSlot} onGhostChange={setGhostId} />
         </Suspense>

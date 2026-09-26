@@ -1,1 +1,0 @@
-The order was founded long ago by the **[[lavawalker]], the sixth [[veilfarer]]**, after he returned from a journey few could understand. From whatever he encountered, Lavawalker became determined to prepare future generations to carry the light in his absence.

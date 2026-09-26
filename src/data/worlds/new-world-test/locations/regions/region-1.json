@@ -1,0 +1,13 @@
+{
+  "id": "region-1",
+  "name": "region 1",
+  "type": "region",
+  "parent": "adding-more-with-island",
+  "polygons": [
+    [
+      [2073, 786],
+      [1997, 865],
+      [1860, 736]
+    ]
+  ]
+}

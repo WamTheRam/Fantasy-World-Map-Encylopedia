@@ -64,7 +64,11 @@ export function AtlasPage() {
         <TopBar>
           <Breadcrumbs trail={trail} />
         </TopBar>
-        {!selected && <p className={styles.hint}>Select a country to begin exploring</p>}
+        {!selected && (
+          <p className={styles.hint}>
+            {index.countries().length === 0 ? 'This world has no map data yet' : 'Select a country to begin exploring'}
+          </p>
+        )}
         {selected && panelHidden && (
           <button type="button" className={styles.reopen} onClick={() => setHiddenFor(null)}>
             <UiIcon name="chevronLeft" size={18} />

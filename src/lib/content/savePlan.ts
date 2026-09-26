@@ -39,17 +39,17 @@ export const isPlaceKind = (kind: string) => kind in LOCATION_FOLDERS;
 export const isKnownKind = (kind: string): kind is EntityType => isPlaceKind(kind) || (LORE_TYPES as readonly string[]).includes(kind) || kind === 'event';
 
 /** Where a brand-new entity's JSON goes, relative to `src/`. */
-export function defaultDataFile(kind: EntityType, id: string): string {
-  if (kind === 'event') return `data/history/${id}.json`;
+export function defaultDataFile(worldId: string, kind: EntityType, id: string): string {
+  if (kind === 'event') return `data/worlds/${worldId}/history/${id}.json`;
   const place = LOCATION_FOLDERS[kind];
-  if (place) return `data/locations/${place}/${id}.json`;
-  return `data/entities/${LORE_FOLDERS[kind]}/${id}.json`;
+  if (place) return `data/worlds/${worldId}/locations/${place}/${id}.json`;
+  return `data/worlds/${worldId}/entities/${LORE_FOLDERS[kind]}/${id}.json`;
 }
 
 /** Where a new Markdown body goes, relative to `src/`. */
-export function defaultContentFile(kind: EntityType, id: string): string {
+export function defaultContentFile(worldId: string, kind: EntityType, id: string): string {
   const folder = kind === 'event' ? 'history' : isPlaceKind(kind) ? 'locations' : LORE_FOLDERS[kind];
-  return `content/${folder}/${id}.md`;
+  return `content/worlds/${worldId}/${folder}/${id}.md`;
 }
 
 export interface ExistingEntry {
@@ -60,18 +60,19 @@ export interface ExistingEntry {
 
 export type SavePlan = { ok: true; file: string } | { ok: false; status: number; error: string };
 
-export function planSave(args: { mode: 'create' | 'update'; id: string; kind: string; existing: readonly ExistingEntry[] }): SavePlan {
-  const { mode, id, kind, existing } = args;
+export function planSave(args: { mode: 'create' | 'update'; worldId: string; id: string; kind: string; existing: readonly ExistingEntry[] }): SavePlan {
+  const { mode, worldId, id, kind, existing } = args;
   const fail = (status: number, error: string): SavePlan => ({ ok: false, status, error });
 
   if (typeof id !== 'string' || !ID_PATTERN.test(id)) return fail(400, `"${id}" is not a valid id. Use lowercase letters, digits and hyphens.`);
+  if (typeof worldId !== 'string' || !ID_PATTERN.test(worldId)) return fail(400, `"${worldId}" is not a valid world id.`);
   if (!isKnownKind(kind)) return fail(400, `Unknown kind "${kind}".`);
 
   if (mode === 'create') {
     if (existing.length > 0) {
-      return fail(409, `The id "${id}" is already used by ${existing[0].file}. Ids are unique across the whole world. Pick another, or edit the existing one.`);
+      return fail(409, `The id "${id}" is already used by ${existing[0].file}. Ids are unique within a world. Pick another, or edit the existing one.`);
     }
-    return { ok: true, file: defaultDataFile(kind, id) };
+    return { ok: true, file: defaultDataFile(worldId, kind, id) };
   }
 
   if (existing.length === 0) return fail(404, `Nothing has the id "${id}", so there is nothing to update.`);

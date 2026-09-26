@@ -293,7 +293,7 @@ export default function TraceTool({ index, selectedId, viewport, layerSlot, onGh
       const response = await fetch(`${import.meta.env.BASE_URL}__atlas/save`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ worldId: index.world.id, ...payload }),
       });
       const result = (await response.json()) as { path?: string; created?: boolean; error?: string };
       if (!response.ok || !result.path) throw new Error(result.error ?? 'Save failed.');

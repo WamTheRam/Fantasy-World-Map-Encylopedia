@@ -1,5 +1,7 @@
 import { Suspense, lazy, useState } from 'react';
 import { UiIcon } from '@/components/common/UiIcon';
+import { useWorld } from '@/context/WorldContext';
+import { isFileBackedWorldId } from '@/lib/worlds/worldStore';
 import type { LoreType } from '@/types/world';
 import styles from './Editor.module.css';
 
@@ -12,8 +14,14 @@ const EntityEditor = import.meta.env.DEV ? lazy(() => import('./EntityEditor')) 
 
 /** "Edit" for an existing entity: place, person, event, anything with an id. */
 export function EditButton({ entityId }: { entityId: string }) {
+  const { world } = useWorld();
   const [open, setOpen] = useState(false);
-  if (!EntityEditor) return null;
+  // The dev save server writes into a world's own folder under src/data/worlds/<id>, which
+  // only exists for a file-backed world (this app's bundled one, or one scaffolded by Home's
+  // "Create World" while a dev server is running). A browser-only world has no such folder,
+  // so hide Edit there rather than trying to save somewhere that doesn't exist.
+  // See MapCanvas.tsx for the equivalent guard on the Trace tool.
+  if (!EntityEditor || !isFileBackedWorldId(world.id)) return null;
   return (
     <>
       <button type="button" className={styles.editButton} onClick={() => setOpen(true)} title="Edit this entry's information">
@@ -31,8 +39,9 @@ export function EditButton({ entityId }: { entityId: string }) {
 
 /** "New person", "Add event", ... opens the same editor with a blank entry. */
 export function NewEntityButton({ kind, label }: { kind: LoreType | 'event'; label: string }) {
+  const { world } = useWorld();
   const [open, setOpen] = useState(false);
-  if (!EntityEditor) return null;
+  if (!EntityEditor || !isFileBackedWorldId(world.id)) return null;
   return (
     <>
       <button type="button" className={styles.newButton} onClick={() => setOpen(true)}>

@@ -1,8 +1,0 @@
-{
-  "id": "highfall",
-  "name": "Highfall",
-  "type": "city",
-  "parent": "aurelion",
-  "icon": "town",
-  "coordinates": { "x": 3282, "y": 1160 }
-}

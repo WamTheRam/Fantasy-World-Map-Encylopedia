@@ -1,8 +1,0 @@
-{
-  "id": "graymere",
-  "name": "Graymere",
-  "type": "city",
-  "parent": "aurelion",
-  "icon": "town",
-  "coordinates": { "x": 3266, "y": 1161 }
-}
